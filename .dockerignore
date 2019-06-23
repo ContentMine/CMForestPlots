@@ -1,0 +1,11 @@
+.git
+.cache
+
+cephis/src/test/**
+cephis/src/test
+cephis/.git
+
+normami/src/test/**
+normami/src/test
+normami/.git
+
