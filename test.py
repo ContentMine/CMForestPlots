@@ -85,6 +85,7 @@ class ForestPlot(object):
             ws.cell(row=count, column=2, value="P")
             ws.cell(row=count, column=3, value=self.OverallP)
             count += 1
+        count += 1
 
         ws.cell(row=count, column=1, value="Data:")
         for title, value in zip(self.titles, self.values):
@@ -98,7 +99,7 @@ class ForestPlot(object):
 
 
 class SPSSForestPlot(ForestPlot):
-    SUMMARY_RE = re.compile("^\s*Heterogeneity:(\s*Tau.\s*=\s*|)([\d.,]*)(\s*[,;]|)\s*Chi.\s*=\s*([\d.,]+)\s*[,;]\s*df\s*=\s*([\d.,]+)\s*\(\s*P\s*=\s*([\d,.]+)\s*\)\s*[,;]\s*[IPF7]\s*=\s*([\d.,]+%)")
+    SUMMARY_RE = re.compile("^\s*Heterogeneity:(\s*Tau.\s*=\s*|)([\d.,]*)(\s*[,;]|)\s*Chi.\s*=\s*([\d.,]+)\s*[,;]\s*df\s*=\s*([\d.,]+)\s*\(\s*P\s*=\s*([\d,.]+)\s*\)\s*[,;]\s*[IPF7]\s*=\s*([\d.,]+%)[\s\n]*Test for overall effect:\s*Z\s*=\s*([\d.,]+)\s*\(\s*P\s*=\s*([\d.,]+)\s*\)")
 
 
 class StataForestPlot(ForestPlot):
@@ -207,6 +208,14 @@ class Controller(object):
                         pass
                     try:
                         plot.I = forgiving_float(best_res[6])
+                    except ValueError:
+                        pass
+                    try:
+                        plot.OverallZ = forgiving_float(best_res[7])
+                    except ValueError:
+                        pass
+                    try:
+                        plot.OverallP = forgiving_float(best_res[8])
                     except ValueError:
                         pass
 
