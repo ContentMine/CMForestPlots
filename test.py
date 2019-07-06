@@ -15,6 +15,15 @@ IMAGE_NAME = "forestplot"
 # b'Heterogeneity: Chi? = 2.07, df= 10 (P= 1.00); /7= 0%\nTest for overall effect: Z= 1.13 (P = 0.26)\n\x0c'
 # b'Heterogeneity: Ch? = 2.11, df = 5 (P = 0.83); P= 0%\nTest for overall effect: Z = 3.80 (P = 0.0001)\n\n \n\x0c'
 
+def forgiving_float(s):
+    return float(s.replace('~', '-').replace(',', '.'))
+
+class Paper(object):
+
+    def __init__(self, ctree_directory):
+        self.ctree_directory = ctree_directory
+        self.plots = []
+
 class ForestPlot(object):
 
     def __init__(self, image_directory):
@@ -33,6 +42,9 @@ class ForestPlot(object):
 
     def add_footer_summery(self, footer):
         pass
+
+    def is_valid(self):
+        return len(self.titles) > 0
 
     def save(self):
         wb = openpyxl.Workbook()
@@ -86,7 +98,7 @@ class ForestPlot(object):
 
 
 class SPSSForestPlot(ForestPlot):
-    SUMMARY_RE = re.compile("^\s*Heterogeneity:(\s*Tau.\s*=\s*|)([\d.]*)(\s*[,;]|)\s*Chi.\s*=\s*([\d.]+)\s*[,;]\s*df\s*=\s*(\d+)\s*\(\s*P\s*=\s*([\d.]+)\s*\)\s*[,;]\s*[IPF7]\s*=\s*([\d]+%)")
+    SUMMARY_RE = re.compile("^\s*Heterogeneity:(\s*Tau.\s*=\s*|)([\d.,]*)(\s*[,;]|)\s*Chi.\s*=\s*([\d.,]+)\s*[,;]\s*df\s*=\s*([\d.,]+)\s*\(\s*P\s*=\s*([\d,.]+)\s*\)\s*[,;]\s*[IPF7]\s*=\s*([\d.,]+%)")
 
 
 class StataForestPlot(ForestPlot):
@@ -142,8 +154,11 @@ class Controller(object):
 
                 self.normami_command("ami-forestplot", ["--segment", "--template", "raw_s4_thr_{0}_ds/template.xml".format(threshold)])
 
+        papers = []
         for ctree in project_contents:
-            print(ctree)
+            paper = Paper(ctree)
+            papers.append(paper)
+
             pdf_images_dir = os.path.join(ctree, "pdfimages")
             imagedirs = [os.path.join(pdf_images_dir, x) for x in os.listdir(pdf_images_dir) if x.startswith("image.")]
             for imagedir in imagedirs:
@@ -156,7 +171,7 @@ class Controller(object):
                     continue
 
                 best_res = None
-                for threshold in range(60, 80, 2):
+                for threshold in range(50, 80, 2):
                     output_ocr_name = os.path.join(imagedir, "footer.summary.{0}.txt".format(threshold))
                     if not os.path.isfile(output_ocr_name):
                         output_image_name = os.path.join(imagedir, "footer.summary.{0}.png".format(threshold))
@@ -174,18 +189,33 @@ class Controller(object):
                                 best_res = m.groups()
 
                 if best_res:
-                    plot.tau = best_res[1]
-                    plot.chi = best_res[3]
-                    plot.df = best_res[4]
-                    plot.P = best_res[5]
-                    plot.I = best_res[6]
+                    try:
+                        plot.tau = forgiving_float(best_res[1])
+                    except ValueError:
+                        pass
+                    try:
+                        plot.chi = forgiving_float(best_res[3])
+                    except ValueError:
+                        pass
+                    try:
+                        plot.df = forgiving_float(best_res[4])
+                    except ValueError:
+                        pass
+                    try:
+                        plot.P = forgiving_float(best_res[5])
+                    except ValueError:
+                        pass
+                    try:
+                        plot.I = forgiving_float(best_res[6])
+                    except ValueError:
+                        pass
 
                 image_path = os.path.join(imagedir, "raw.body.table.png")
                 if not os.path.isfile(image_path):
                     continue
 
                 best_res = None
-                for threshold in range(60, 80, 2):
+                for threshold in range(50, 80, 2):
                     print("Threshold {0}".format(threshold))
                     output_ocr_name = os.path.join(imagedir, "body.table.{0}.txt".format(threshold))
                     if not os.path.isfile(output_ocr_name):
@@ -207,13 +237,13 @@ class Controller(object):
                     print("We got {0} titles.".format(len(titles)))
 
                     values = []
-                    r = re.compile('^\s*([\d.]+)\s*[\[\({]([\d.]+)\s*,\s*([\d.]+)[\]}\)]\s*$')
+                    r = re.compile('^\s*([-~]{0,1}\d+[.,]{0,1}\d*)\s*[\[\({]([-~]{0,1}\d+[.,]{0,1}\d*)\s*,\s*([-~]{0,1}\d+[.,]{0,1}\d*)[\]}\)]\s*$')
                     for line in lines:
                         m = r.match(line)
                         if m:
                             g = m.groups()
                             try:
-                                values.append((float(g[0]), float(g[1]), float(g[2])))
+                                values.append((forgiving_float(g[0]), forgiving_float(g[1]), forgiving_float(g[2])))
                             except ValueError:
                                 pass
                     print("We got {0} values.".format(len(values)))
@@ -228,8 +258,14 @@ class Controller(object):
                     plot.titles = best_res[0]
                     plot.values = best_res[1]
 
-
+                if plot.is_valid():
+                    paper.plots.append(plot)
                 plot.save()
+
+        for paper in papers:
+            print("Paper {1} has {0} plots.".format(len(paper.plots), paper.ctree_directory))
+            for plot in paper.plots:
+                print("\t{0}".format(plot.image_directory))
 
 
 

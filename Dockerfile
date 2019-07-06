@@ -2,7 +2,8 @@ FROM maven:3.6.1-jdk-8
 
 RUN apt-get update && apt-get install -y \
     gocr \
-    tesseract-ocr
+    tesseract-ocr \
+    imagemagick
 
 ADD cephis /usr/src/cephis
 ADD normami /usr/src/normami
