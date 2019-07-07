@@ -1,5 +1,12 @@
 
-all: image
+all: dockerimage
 
-image:
+dockerimage:
 	docker build -t forestplot .
+
+lint:
+	pylint forestplots
+	pylint test
+
+test:
+	pytest --ignore normami --ignore cephis
