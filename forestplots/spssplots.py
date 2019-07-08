@@ -25,6 +25,8 @@ class SPSSForestPlot(ForestPlot):
     PARTS_SPLIT_RE = re.compile(r"([\w7]+.?\s*=\s*\d+[,.]*\d*)")
     PARTS_GROK_RE = re.compile(r"([\w7]+.?)\s*=\s*(\d+[,.]*\d*)")
 
+    HEADER_RE = re.compile(r"^.*\n\s*(M-H|IV)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
+
     @staticmethod
     def _decode_footer_summary_ocr(ocr_prose):
 
@@ -66,7 +68,6 @@ class SPSSForestPlot(ForestPlot):
         return hetrogeneity, overall_effect
 
     def _process_footer(self):
-        """Internal method to process just the footer summary of an SPSS forest plot."""
         footer_image_path = os.path.join(self.image_directory, "raw.footer.summary.png")
         if not os.path.isfile(footer_image_path):
             raise InvalidForestPlot
@@ -88,6 +89,46 @@ class SPSSForestPlot(ForestPlot):
             if len(overall_effect) > len(self.overall_effect):
                 self.overall_effect = overall_effect
 
+    @staticmethod
+    def _decode_header_summary_ocr(ocr_prose):
+        print(ocr_prose)
+        match = SPSSForestPlot.HEADER_RE.match(ocr_prose)
+        try:
+            return match.groups()
+        except AttributeError:
+            raise ValueError
+
+    def _process_header(self):
+        header_image_path = os.path.join(self.image_directory, "raw.header.graphheads.png")
+        if not os.path.isfile(header_image_path):
+            raise InvalidForestPlot
+
+        for threshold in range(50, 80, 2):
+            output_ocr_name = os.path.join(self.image_directory, "header.graphheads.{0}.txt".format(threshold))
+            if not os.path.isfile(output_ocr_name):
+                output_image_name = os.path.join(self.image_directory, "header.graphheads.{0}.png".format(threshold))
+                if not os.path.isfile(output_image_name):
+                    subprocess.run(["convert", "-black-threshold", "{0}%".format(threshold),
+                                    header_image_path, output_image_name])
+                subprocess.run(["tesseract", output_image_name, os.path.splitext(output_ocr_name)[0]],
+                               capture_output=True)
+
+            ocr_prose = open(output_ocr_name).read()
+            try:
+                estimator_type, model_type, confidence_interval = SPSSForestPlot._decode_header_summary_ocr(ocr_prose)
+                self.add_summary_information(estimator_type=estimator_type, model_type=model_type,
+                                             confidence_interval=confidence_interval)
+                break
+            except ValueError:
+                continue
+
+
     def process(self):
         """Process the possible SPSS forest plot."""
         self._process_footer()
+        if not self.hetrogeneity or not self.overall_effect:
+            raise InvalidForestPlot
+
+        self._process_header()
+        if not self.summary:
+            raise InvalidForestPlot
