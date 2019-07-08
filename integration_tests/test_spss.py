@@ -130,6 +130,18 @@ class IntegrationTests(unittest.TestCase):
                     "Z": 3.8,
                     "P": 0.0001,
                 })
+                expected_data = [
+                    ("Kuklo 2007", 0.39, 0.17, 0.91),
+                    ("Karatoprak 2008", 1.19, 0.07, 20.21),
+                    ("Yang 2012", 1.00, 0.06, 17.12),
+                    ("Hwang 2012", 0.39, 0.1, 1.51),
+                    ("Yilmaz 2012", 0.49, 0.04, 5.61),
+                    ("Samdani 2013", 0.25, 0.12, 0.55),
+                    ("Total (95% CI)", 0.37, 0.22, 0.62),
+                ]
+                self.assertEqual(len(expected_data), len(data))
+                for expected, actual in zip(expected_data, data):
+                    self.assertEqual(expected, actual)
 
             elif result.find("image.6.1.96") != -1:
                 self.assertEqual(estimator_type, "IV")
@@ -145,6 +157,23 @@ class IntegrationTests(unittest.TestCase):
                     "Z": 9.01,
                     "P": 0.00001,
                 })
+                expected_data = [
+                    ("Kim 2006", -11.0, -16.66, -5.34),
+                    ("Qiu 2007", -9.0, -14.61, -3.39),
+                    ("Lowenstein 2007", -5.19, -11.19, 0.81),
+                    ("Li 2008", -11.0, -16.06, -5.94),
+                    ("Fu 2009", -5.5, -8.13, -2.87),
+                    ("Sabharwal 2011", -4.0, -9.14, 1.14),
+                    ("Yilmaz 2012", -5.0, -9.02, -0.98),
+                    ("Hwang 2012", -2.9, -6.48, 0.68),
+                    ("Yang 2012", -4.0, -7.34, -0.66),
+                    ("Haber 2014", -9.0, -13.58, -4.42),
+                    ("Legarreta 2014", -4.40, -9.41, 0.61),
+                    ("Total (95% CI)", -5.8, -7.06, -4.54),
+                ]
+                self.assertEqual(len(expected_data), len(data))
+                for expected, actual in zip(expected_data, data):
+                    self.assertEqual(expected, actual)
 
             elif result.find("image.6.2.96") != -1:
                 self.assertEqual(estimator_type, "IV")
@@ -161,6 +190,21 @@ class IntegrationTests(unittest.TestCase):
                     "Z": 5.43,
                     "P": 0.00001,
                 })
+                expected_data = [
+                    ("Kim 2006", -10.0, -14.95, -5.05),
+                    ("Lowenstein 2007", -3.07, -9.47, 3.33),
+                    ("Li 2008", -9.0, -13.37, -4.63),
+                    ("Fu 2009", -6.3, -9.27, -3.33),
+                    ("Helgeson 2010", -3.6, -6.66, -0.54),
+                    ("Hwang 2012", -4.3, -8.05, -0.55),
+                    ("Yilmaz 2012", -10.4, -14.2, -6.6),
+                    ("Legarreta 2014", -1.0, -4.79, 2.79),
+                    ("Liu 2014", -4.8, -8.78, -0.82),
+                    ("Total (95% CI)", -5.79, -7.88, -3.7),
+                ]
+                self.assertEqual(len(expected_data), len(data))
+                for expected, actual in zip(expected_data, data):
+                    self.assertEqual(expected, actual)
 
             elif result.find("image.7.1.110") != -1:
                 self.assertEqual(estimator_type, "IV")
@@ -176,3 +220,14 @@ class IntegrationTests(unittest.TestCase):
                     "Z": 0.54,
                     "P": 0.59,
                 })
+                expected_data = [
+                    ("Kim 2006", -1.0, -6.17, 4.17),
+                    ("Li 2008", -1.0, -3.79, 1.79),
+                    ("Helgeson 2010", 2.5, -0.58, 5.58),
+                    ("Hwang 2012", 0.23, -1.49, 1.95),
+                    ("Liu 2014", 0.7, -3.06, 4.46),
+                    ("Total (95% CI)", 0.33, -0.88, 1.54),
+                ]
+                self.assertEqual(len(expected_data), len(data))
+                for expected, actual in zip(expected_data, data):
+                    self.assertEqual(expected, actual)

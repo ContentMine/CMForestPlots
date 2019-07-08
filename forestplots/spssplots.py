@@ -179,6 +179,7 @@ class SPSSForestPlot(ForestPlot):
             if values and len(values) == len(titles):
                 data = collections.OrderedDict(zip(titles, values))
                 flattened_data = [(title, values[0], values[1], values[2]) for title, values in data.items()]
+                print(flattened_data[2])
                 self.add_table_data(flattened_data)
 
     def process(self):
