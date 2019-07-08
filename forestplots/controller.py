@@ -1,12 +1,9 @@
 """Module for managing the forest plot data extraction."""
 
-import collections
 import os
-import re
 import subprocess
 #import xml.dom.minidom
 
-from forestplots.helpers import forgiving_float
 from forestplots.plots import InvalidForestPlot
 from forestplots.spssplots import SPSSForestPlot
 
@@ -44,7 +41,7 @@ class Controller():
 
 
     def main(self):
-
+        """This is the main method of the tool."""
         if not os.path.isfile(os.path.join(self.project_directory, "make_project.json")):
             print("Generating CProject in {0}...".format(self.project_directory))
             self.normami("ami-makeproject", ["--rawfiletypes", "html,pdf,xml", "--omit", "template.xml"])
@@ -83,79 +80,11 @@ class Controller():
             for imagedir in imagedirs:
 
                 plot = SPSSForestPlot(imagedir)
-
                 try:
                     plot.process()
                 except InvalidForestPlot:
                     continue
-
-
-
-                image_path = os.path.join(imagedir, "raw.body.table.png")
-                if not os.path.isfile(image_path):
-                    continue
-
-                for threshold in range(50, 80, 2):
-                    output_ocr_name = os.path.join(imagedir, "body.table.{0}.txt".format(threshold))
-                    if not os.path.isfile(output_ocr_name):
-                        output_image_name = os.path.join(imagedir, "body.table.{0}.png".format(threshold))
-                        if not os.path.isfile(output_image_name):
-                            subprocess.run(["convert", "-black-threshold", "{0}%".format(threshold),
-                                            image_path, output_image_name])
-                        subprocess.run(["tesseract", output_image_name, os.path.splitext(output_ocr_name)[0]],
-                                       capture_output=True)
-
-                    titles = []
-                    raw_lines = open(output_ocr_name, 'r').readlines()
-                    lines = [x for x in raw_lines if len(x.strip()) > 0]
-
-                    for line in lines:
-                        if line.startswith('Total'):
-                            titles.append(line)
-                            break
-                        titles.append(line)
-
-                    values = []
-                    r = re.compile(r'^\s*([-~]{0,1}\d+[.,]{0,1}\d*)\s*[\[\({]([-~]{0,1}\d+[.,]{0,1}\d*)\s*,\s*([-~]{0,1}\d+[.,]{0,1}\d*)[\]}\)]\s*$')
-                    for line in lines:
-                        m = r.match(line)
-                        if m:
-                            g = m.groups()
-                            try:
-                                values.append((forgiving_float(g[0]), forgiving_float(g[1]), forgiving_float(g[2])))
-                            except ValueError:
-                                pass
-
-                    if values and len(values) == len(titles):
-                        data = collections.OrderedDict(zip(titles, values))
-                        plot.add_table_data(data)
-
-                image_path = os.path.join(imagedir, "raw.header.graphheads.png")
-                if not os.path.isfile(image_path):
-                    continue
-
-                best_res = None
-                for threshold in range(50, 80, 2):
-                    output_ocr_name = os.path.join(imagedir, "header.graphheads.{0}.txt".format(threshold))
-                    if not os.path.isfile(output_ocr_name):
-                        output_image_name = os.path.join(imagedir, "header.graphheads.{0}.png".format(threshold))
-                        if not os.path.isfile(output_image_name):
-                            subprocess.run(["convert", "-black-threshold", "{0}%".format(threshold),
-                                            image_path, output_image_name])
-                        subprocess.run(["tesseract", output_image_name, os.path.splitext(output_ocr_name)[0]],
-                                       capture_output=True)
-
-                    ocr_prose = open(output_ocr_name).read()
-                    r = re.compile(r"^.*\n\s*(M-H|IV)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
-                    m = r.match(ocr_prose)
-                    if m:
-                        best_res = m.groups()
-                if best_res:
-                    plot.add_summary_information(estimator_type=best_res[0], model_type=best_res[1],
-                                                 confidence_interval=best_res[2])
-
-                if plot.is_valid():
-                    paper.plots.append(plot)
+                paper.plots.append(plot)
                 plot.save()
 
         for paper in papers:

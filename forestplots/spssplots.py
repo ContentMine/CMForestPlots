@@ -27,6 +27,8 @@ class SPSSForestPlot(ForestPlot):
 
     HEADER_RE = re.compile(r"^.*\n\s*(M-H|IV)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
 
+    TABLE_RE = re.compile(r'^\s*([-~]{0,1}\d+[.,]{0,1}\d*)\s*[\[\({]([-~]{0,1}\d+[.,]{0,1}\d*)\s*,\s*([-~]{0,1}\d+[.,]{0,1}\d*)[\]}\)]\s*$')
+
     @staticmethod
     def _decode_footer_summary_ocr(ocr_prose):
 
@@ -91,7 +93,6 @@ class SPSSForestPlot(ForestPlot):
 
     @staticmethod
     def _decode_header_summary_ocr(ocr_prose):
-        print(ocr_prose)
         match = SPSSForestPlot.HEADER_RE.match(ocr_prose)
         try:
             return match.groups()
@@ -122,6 +123,46 @@ class SPSSForestPlot(ForestPlot):
             except ValueError:
                 continue
 
+    def _process_table(self):
+        image_path = os.path.join(self.image_directory, "raw.body.table.png")
+        if not os.path.isfile(image_path):
+            raise InvalidForestPlot
+
+        for threshold in range(50, 80, 2):
+            output_ocr_name = os.path.join(self.image_directory, "body.table.{0}.txt".format(threshold))
+            if not os.path.isfile(output_ocr_name):
+                output_image_name = os.path.join(self.image_directory, "body.table.{0}.png".format(threshold))
+                if not os.path.isfile(output_image_name):
+                    subprocess.run(["convert", "-black-threshold", "{0}%".format(threshold),
+                                    image_path, output_image_name])
+                subprocess.run(["tesseract", output_image_name, os.path.splitext(output_ocr_name)[0]],
+                               capture_output=True)
+
+            titles = []
+            raw_lines = open(output_ocr_name, 'r').readlines()
+            lines = [x for x in raw_lines if len(x.strip()) > 0]
+
+            for line in lines:
+                if line.startswith('Total'):
+                    titles.append(line)
+                    break
+                titles.append(line)
+
+            values = []
+            for line in lines:
+                matches = SPSSForestPlot.TABLE_RE.match(line)
+                if matches:
+                    groups = matches.groups()
+                    try:
+                        values.append((forgiving_float(groups[0]),
+                                       forgiving_float(groups[1]),
+                                       forgiving_float(groups[2])))
+                    except ValueError:
+                        pass
+
+            if values and len(values) == len(titles):
+                data = collections.OrderedDict(zip(titles, values))
+                self.add_table_data(data)
 
     def process(self):
         """Process the possible SPSS forest plot."""
@@ -131,4 +172,8 @@ class SPSSForestPlot(ForestPlot):
 
         self._process_header()
         if not self.summary:
+            raise InvalidForestPlot
+
+        self._process_table()
+        if not self.table_data:
             raise InvalidForestPlot
