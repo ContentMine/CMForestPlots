@@ -68,13 +68,13 @@ class SPSSForestPlot(ForestPlot):
                     try:
                         hetrogeneity[possible_keys[0]] = forgiving_float(value)
                     except (IndexError, ValueError):
-                        print("Failed to grok '{0}'".format(key))
+                        pass
                 else:
                     possible_keys = difflib.get_close_matches(key, OVERALL_EFFECT_KEYS)
                     try:
                         overall_effect[possible_keys[0]] = forgiving_float(value)
                     except (IndexError, ValueError):
-                        print("Failed to grok '{0}'".format(key))
+                        pass
 
         return hetrogeneity, overall_effect
 
@@ -170,7 +170,7 @@ class SPSSForestPlot(ForestPlot):
 
             for line in lines:
                 if line.startswith('Total'):
-                    titles.append(line)
+                    titles.append(line.replace("Cl", "CI"))
                     break
                 titles.append(line)
 
@@ -178,7 +178,8 @@ class SPSSForestPlot(ForestPlot):
 
             if values and len(values) == len(titles):
                 data = collections.OrderedDict(zip(titles, values))
-                self.add_table_data(data)
+                flattened_data = [(title, values[0], values[1], values[2]) for title, values in data.items()]
+                self.add_table_data(flattened_data)
 
     def process(self):
         """Process the possible SPSS forest plot."""

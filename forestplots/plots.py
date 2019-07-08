@@ -36,10 +36,28 @@ class ForestPlot():
         if not self.table_data:
             self.table_data = [data]
         else:
-            if len(self.table_data) == len(data):
+            if len(self.table_data[0]) == len(data):
                 self.table_data.append(data)
             elif len(self.table_data) < len(data):
                 self.table_data = [data]
+
+    def _collapse_table(self):
+        if not self.table_data:
+            return []
+        if len(self.table_data) == 1:
+            return self.table_data[0]
+
+        mode_data = []
+        for i in range(len(self.table_data[0])):
+            final_row = []
+            for datum in range(4):
+                data = []
+                for table in self.table_data:
+                    data.append(table[i][datum])
+                mode = max(set(data), key=data.count)
+                final_row.append(mode)
+            mode_data.append(tuple(final_row))
+        return mode_data
 
     def is_valid(self):
         """Based on the data collected, do we think this is a valid plot?"""
@@ -74,11 +92,12 @@ class ForestPlot():
 
         worksheet.cell(row=count, column=1, value="Data:")
         if self.table_data:
-            for title, value in self.table_data[0].items():
-                worksheet.cell(row=count, column=2, value=title)
-                worksheet.cell(row=count, column=3, value=value[0])
-                worksheet.cell(row=count, column=4, value=value[1])
-                worksheet.cell(row=count, column=5, value=value[2])
+            mode_table = self._collapse_table()
+            for value in mode_table:
+                worksheet.cell(row=count, column=2, value=value[0])
+                worksheet.cell(row=count, column=3, value=value[1])
+                worksheet.cell(row=count, column=4, value=value[2])
+                worksheet.cell(row=count, column=5, value=value[3])
                 count += 1
 
         workbook.save(os.path.join(self.image_directory, "results.xlsx"))
