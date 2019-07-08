@@ -27,7 +27,7 @@ class Controller():
     def docker_wrapper(self, command, args):
         """Call a normami command in a docker container."""
         subprocess.run(["docker", "run", "-it", "--rm", "-v", "{0}:/tmp/project".format(self.project_directory),
-                        IMAGE_NAME, command, "-p", "/tmp/project"] + args, capture_output=True)
+                        IMAGE_NAME, command, "-p", "/tmp/project"] + args, capture_output=False)
 
     def normami(self, command, args=None):
         """Call a normami command."""
@@ -90,7 +90,7 @@ class Controller():
 
         summary = {}
         for paper in papers:
-            summary = [x.image_directory for x in paper.plots]
+            summary = [os.path.join(x.image_directory, "results.xlsx") for x in paper.plots]
 
 
             print("Paper {1} has {0} plots.".format(len(paper.plots), paper.ctree_directory))
