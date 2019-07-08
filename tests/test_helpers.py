@@ -1,6 +1,6 @@
 import unittest
-from forestplots.controller import forgiving_float
 
+from forestplots.helpers import forgiving_float
 
 class ForgivingFloatTests(unittest.TestCase):
 

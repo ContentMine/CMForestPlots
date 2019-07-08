@@ -9,25 +9,26 @@ import subprocess
 from forestplots.plots import ForestPlot, InvalidForestPlot
 from forestplots.helpers import forgiving_float
 
+TAU_LABEL = "Tau"
+CHI_LABEL = "Chi"
+DF_LABEL = "df"
+P_LABEL = "P"
+I_LABEL = "I"
+Z_LABEL = "Z"
+
+HETROGENEITY_KEYS = [TAU_LABEL, CHI_LABEL, DF_LABEL, P_LABEL, I_LABEL]
+OVERALL_EFFECT_KEYS = [Z_LABEL, P_LABEL]
+
+PARTS_SPLIT_RE = re.compile(r"([\w7]+.?\s*[=<>]\s*\d+[,.]*\d*)")
+PARTS_GROK_RE = re.compile(r"([\w7]+.?)\s*[=<>]\s*(\d+[,.]*\d*)")
+
+HEADER_RE = re.compile(r"^.*\n\s*(M-H|[1I]V)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
+
+TABLE_VALUE_SPLIT_RE = re.compile(r'([-~]{0,1}\d+[.,]{0,1}\d*\s*[\[\({][-~]{0,1}\d+[.,]{0,1}\d*\s*,\s*[-~]{0,1}\d+[.,]{0,1}\d*[\]}\)])')
+TABLE_VALUE_GROK_RE = re.compile(r'([-~]{0,1}\d+[.,]{0,1}\d*)\s*[\[\({]([-~]{0,1}\d+[.,]{0,1}\d*)\s*,\s*([-~]{0,1}\d+[.,]{0,1}\d*)[\]}\)]')
+
 class SPSSForestPlot(ForestPlot):
     """Concrete subclass for processing SPSS forest plots."""
-
-    TAU_LABEL = "Tau"
-    CHI_LABEL = "Chi"
-    DF_LABEL = "df"
-    P_LABEL = "P"
-    I_LABEL = "I"
-    Z_LABEL = "Z"
-
-    HETROGENEITY_KEYS = [TAU_LABEL, CHI_LABEL, DF_LABEL, P_LABEL, I_LABEL]
-    OVERALL_EFFECT_KEYS = [Z_LABEL, P_LABEL]
-
-    PARTS_SPLIT_RE = re.compile(r"([\w7]+.?\s*=\s*\d+[,.]*\d*)")
-    PARTS_GROK_RE = re.compile(r"([\w7]+.?)\s*=\s*(\d+[,.]*\d*)")
-
-    HEADER_RE = re.compile(r"^.*\n\s*(M-H|IV)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
-
-    TABLE_RE = re.compile(r'^\s*([-~]{0,1}\d+[.,]{0,1}\d*)\s*[\[\({]([-~]{0,1}\d+[.,]{0,1}\d*)\s*,\s*([-~]{0,1}\d+[.,]{0,1}\d*)[\]}\)]\s*$')
 
     @staticmethod
     def _decode_footer_summary_ocr(ocr_prose):
@@ -39,29 +40,34 @@ class SPSSForestPlot(ForestPlot):
 
         for line in lines:
             prefix = ""
-            if line.startswith("Heterogeneity:"):
+            offset_h = line.find("Heterogeneity:")
+            offset_t = line.find("Test for overall effect:")
+            offset = 0
+            if offset_h != -1:
                 prefix = "Heterogeneity:"
-            elif line.startswith("Test for overall effect:"):
+                offset = offset_h
+            elif offset_t != -1:
                 prefix = "Test for overall effect:"
+                offset = offset_t
             else:
                 continue
-            data = line[len(prefix):].strip()
-            parts = SPSSForestPlot.PARTS_SPLIT_RE.split(data)
+            data = line[len(prefix) + offset:].strip()
+            parts = PARTS_SPLIT_RE.split(data)
 
             for part in parts:
-                match = SPSSForestPlot.PARTS_GROK_RE.match(part)
+                match = PARTS_GROK_RE.match(part)
                 if not match:
                     continue
                 key, value = match.groups()
 
                 if prefix == "Heterogeneity:":
-                    possible_keys = difflib.get_close_matches(key, SPSSForestPlot.HETROGENEITY_KEYS)
+                    possible_keys = difflib.get_close_matches(key, HETROGENEITY_KEYS)
                     try:
                         hetrogeneity[possible_keys[0]] = forgiving_float(value)
                     except (IndexError, ValueError):
                         print("Failed to grok {0}".format(part))
                 else:
-                    possible_keys = difflib.get_close_matches(key, SPSSForestPlot.OVERALL_EFFECT_KEYS)
+                    possible_keys = difflib.get_close_matches(key, OVERALL_EFFECT_KEYS)
                     try:
                         overall_effect[possible_keys[0]] = forgiving_float(value)
                     except (IndexError, ValueError):
@@ -93,9 +99,11 @@ class SPSSForestPlot(ForestPlot):
 
     @staticmethod
     def _decode_header_summary_ocr(ocr_prose):
-        match = SPSSForestPlot.HEADER_RE.match(ocr_prose)
+        match = HEADER_RE.match(ocr_prose)
         try:
-            return match.groups()
+            groups = list(match.groups())
+            groups[0] = groups[0].replace('1', 'I')
+            return tuple(groups)
         except AttributeError:
             raise ValueError
 
@@ -123,6 +131,21 @@ class SPSSForestPlot(ForestPlot):
             except ValueError:
                 continue
 
+    @staticmethod
+    def _decode_table_values_ocr(ocr_prose):
+        parts = TABLE_VALUE_SPLIT_RE.split(ocr_prose)
+        values = []
+        for part in parts:
+            try:
+                groups = TABLE_VALUE_GROK_RE.match(part).groups()
+                values.append((forgiving_float(groups[0]),
+                               forgiving_float(groups[1]),
+                               forgiving_float(groups[2])))
+            except AttributeError:
+                pass
+        return values
+
+
     def _process_table(self):
         image_path = os.path.join(self.image_directory, "raw.body.table.png")
         if not os.path.isfile(image_path):
@@ -139,8 +162,8 @@ class SPSSForestPlot(ForestPlot):
                                capture_output=True)
 
             titles = []
-            raw_lines = open(output_ocr_name, 'r').readlines()
-            lines = [x for x in raw_lines if len(x.strip()) > 0]
+            ocr_prose = open(output_ocr_name, 'r').read()
+            lines = [x.strip() for x in ocr_prose.split('\n') if x.strip()]
 
             for line in lines:
                 if line.startswith('Total'):
@@ -148,17 +171,7 @@ class SPSSForestPlot(ForestPlot):
                     break
                 titles.append(line)
 
-            values = []
-            for line in lines:
-                matches = SPSSForestPlot.TABLE_RE.match(line)
-                if matches:
-                    groups = matches.groups()
-                    try:
-                        values.append((forgiving_float(groups[0]),
-                                       forgiving_float(groups[1]),
-                                       forgiving_float(groups[2])))
-                    except ValueError:
-                        pass
+            values = SPSSForestPlot._decode_table_values_ocr(ocr_prose)
 
             if values and len(values) == len(titles):
                 data = collections.OrderedDict(zip(titles, values))

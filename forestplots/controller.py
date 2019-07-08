@@ -1,5 +1,6 @@
 """Module for managing the forest plot data extraction."""
 
+import json
 import os
 import subprocess
 #import xml.dom.minidom
@@ -7,7 +8,7 @@ import subprocess
 from forestplots.plots import InvalidForestPlot
 from forestplots.spssplots import SPSSForestPlot
 
-USE_DOCKER = True
+USE_DOCKER = False
 IMAGE_NAME = "forestplot"
 
 class Paper():
@@ -87,7 +88,14 @@ class Controller():
                 paper.plots.append(plot)
                 plot.save()
 
+        summary = {}
         for paper in papers:
+            summary = [x.image_directory for x in paper.plots]
+
+
             print("Paper {1} has {0} plots.".format(len(paper.plots), paper.ctree_directory))
             for plot in paper.plots:
                 print("\t{0}".format(plot.image_directory))
+
+        with open(os.path.join(self.project_directory, "forestplots.json"), "w") as results_file:
+            results_file.write(json.dumps(summary))
