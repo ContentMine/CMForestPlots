@@ -1,0 +1,6 @@
+[submodule "cephis"]
+	path = cephis
+	url = https://github.com/ContentMine/cephis.git
+[submodule "normami"]
+	path = normami
+	url = https://github.com/petermr/normami.git
