@@ -19,8 +19,8 @@ Z_LABEL = "Z"
 HETROGENEITY_KEYS = [TAU_LABEL, CHI_LABEL, DF_LABEL, P_LABEL, I_LABEL]
 OVERALL_EFFECT_KEYS = [Z_LABEL, P_LABEL]
 
-PARTS_SPLIT_RE = re.compile(r"([\w7]+.?\s*[=<>]\s*\d+[,.]*\d*)")
-PARTS_GROK_RE = re.compile(r"([\w7]+.?)\s*[=<>]\s*(\d+[,.]*\d*)")
+PARTS_SPLIT_RE = re.compile(r"([\w7\?]+.?\s*[=<>]\s*\d+[,.]*\d*)")
+PARTS_GROK_RE = re.compile(r"([\w7\?]+.?)\s*[=<>]\s*(\d+[,.]*\d*)")
 
 HEADER_RE = re.compile(r"^.*\n\s*(M-H|[1I]V)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
 
@@ -59,19 +59,22 @@ class SPSSForestPlot(ForestPlot):
                 if not match:
                     continue
                 key, value = match.groups()
+                key = key.strip()
 
                 if prefix == "Heterogeneity:":
+                    if key in ("7", "?", "F"):
+                        key = "I"
                     possible_keys = difflib.get_close_matches(key, HETROGENEITY_KEYS)
                     try:
                         hetrogeneity[possible_keys[0]] = forgiving_float(value)
                     except (IndexError, ValueError):
-                        print("Failed to grok {0}".format(part))
+                        print("Failed to grok '{0}'".format(key))
                 else:
                     possible_keys = difflib.get_close_matches(key, OVERALL_EFFECT_KEYS)
                     try:
                         overall_effect[possible_keys[0]] = forgiving_float(value)
                     except (IndexError, ValueError):
-                        print("Failed to grok {0}".format(part))
+                        print("Failed to grok '{0}'".format(key))
 
         return hetrogeneity, overall_effect
 
