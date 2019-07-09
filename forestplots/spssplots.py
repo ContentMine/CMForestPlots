@@ -24,8 +24,8 @@ PARTS_GROK_RE = re.compile(r"([\w7\?]+.?)\s*[=<>]\s*(\d+[,.]*\d*)")
 
 HEADER_RE = re.compile(r"^.*\n\s*(M-H|[1I]V)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
 
-TABLE_VALUE_SPLIT_RE = re.compile(r'([-~]{0,1}\d+[.,]{0,1}\d*\s*[\[\({][-~]{0,1}\d+[.,]{0,1}\d*\s*,\s*[-~]{0,1}\d+[.,]{0,1}\d*[\]}\)])')
-TABLE_VALUE_GROK_RE = re.compile(r'([-~]{0,1}\d+[.,]{0,1}\d*)\s*[\[\({]([-~]{0,1}\d+[.,]{0,1}\d*)\s*,\s*([-~]{0,1}\d+[.,]{0,1}\d*)[\]}\)]')
+TABLE_VALUE_SPLIT_RE = re.compile(r'([-~]{0,1}\d+[.,:]\d*\s*[/\[\({][-~]{0,1}\d+[.,:]\d*\s*,\s*[-~]{0,1}\d+[.,:]\d*[\]}\)])')
+TABLE_VALUE_GROK_RE = re.compile(r'([-~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-~]{0,1}\d+[.,:]\d*)\s*,\s*([-~]{0,1}\d+[.,:]\d*)[\]}\)]')
 
 class SPSSForestPlot(ForestPlot):
     """Concrete subclass for processing SPSS forest plots."""
@@ -141,9 +141,15 @@ class SPSSForestPlot(ForestPlot):
         for part in parts:
             try:
                 groups = TABLE_VALUE_GROK_RE.match(part).groups()
-                values.append((forgiving_float(groups[0]),
-                               forgiving_float(groups[1]),
-                               forgiving_float(groups[2])))
+                value = (forgiving_float(groups[0]), forgiving_float(groups[1]), forgiving_float(groups[2]))
+
+                # We note that the leading - is often missed, but the ones within the block less so, so we
+                # have a sanity check here and see if adding a -ve to the first value helps
+                if not value[1] < value[0] < value[2]:
+                    if value[1] < -value[0] < value[2]:
+                        value = (-value[0], value[1], value[2])
+
+                values.append(value)
             except AttributeError:
                 pass
         return values
@@ -179,7 +185,7 @@ class SPSSForestPlot(ForestPlot):
             if values and len(values) == len(titles):
                 data = collections.OrderedDict(zip(titles, values))
                 flattened_data = [(title, values[0], values[1], values[2]) for title, values in data.items()]
-                print(flattened_data[2])
+                print(flattened_data[1])
                 self.add_table_data(flattened_data)
 
     def process(self):
