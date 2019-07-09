@@ -136,6 +136,10 @@ class SPSSForestPlot(ForestPlot):
 
     @staticmethod
     def _decode_table_values_ocr(ocr_prose):
+
+        # Fix some common number replacements in OCR
+        ocr_prose = ocr_prose.replace('§', '5')
+
         parts = TABLE_VALUE_SPLIT_RE.split(ocr_prose)
         values = []
         for part in parts:
@@ -185,7 +189,7 @@ class SPSSForestPlot(ForestPlot):
             if values and len(values) == len(titles):
                 data = collections.OrderedDict(zip(titles, values))
                 flattened_data = [(title, values[0], values[1], values[2]) for title, values in data.items()]
-                print(flattened_data[1])
+                print(flattened_data[0])
                 self.add_table_data(flattened_data)
 
     def process(self):

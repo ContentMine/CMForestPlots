@@ -60,3 +60,17 @@ class DecodeExampleSPSSForestPlotTableValues(unittest.TestCase):
             (0.70, -3.06, 4.46),
             (0.33, -0.88, 1.54),
         ])
+
+
+    def test_value_example_4(self):
+        example = """
+1.57 (0.79, 3.12]
+2.88 (1.50, §.56]
+1.07 (0.62, 1.84]
+"""
+        values = SPSSForestPlot._decode_table_values_ocr(example)
+        self.assertEqual(values, [
+            (1.57, 0.79, 3.12),
+            (2.88, 1.5, 5.56),
+            (1.07, 0.62, 1.84),
+        ])
