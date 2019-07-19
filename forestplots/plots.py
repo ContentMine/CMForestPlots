@@ -38,7 +38,7 @@ class ForestPlot():
         else:
             if len(self.table_data[0]) == len(data):
                 self.table_data.append(data)
-            elif len(self.table_data) < len(data):
+            elif len(self.table_data[0]) < len(data):
                 self.table_data = [data]
 
     def _collapse_table(self):

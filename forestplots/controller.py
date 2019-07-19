@@ -57,19 +57,33 @@ class Controller():
                 break
         if needs_pdf_parsing:
             self.normami("ami-pdf")
+
+            self.normami("ami-filter", ["--small", "small", "--duplicate", "duplicate", "--monochrome", "monochrome"])
+
             for threshold in ["150"]:
                 print("Testing with threshold {0}".format(threshold))
-                self.normami("ami-image", ["--sharpen", "sharpen4", "--threshold", threshold, "--despeckle", "true"])
+                self.normami("ami-image", ["--inputname", "raw", "--sharpen", "sharpen4", "--threshold", threshold,
+                                           "--despeckle", "true"])
+
                 self.normami("ami-pixel", ["--projections", "--yprojection", "0.4",
                                            "--xprojection", "0.7", "--lines", "--minheight", "1", "--rings", "-1",
                                            "--islands", "0",
                                            "--inputname", "raw_s4_thr_{0}_ds".format(threshold),
                                            "--templateinput", "raw_s4_thr_{0}_ds/projections.xml".format(threshold),
-                                           "--templateout", "template.xml",
-                                           "--templatexsl", "/org/contentmine/ami/tools/spssTemplate.xsl"])
+                                           "--templateoutput", "spss-template.xml",
+                                           "--templatexsl", "/org/contentmine/ami/tools/spssTemplate1.xsl"])
+#
+#                 self.normami("ami-pixel", ["--projections", "--yprojection", "0.8",
+#                                            "--xprojection", "0.6", "--lines", "--minheight", "1", "--rings", "-1",
+#                                            "--islands", "0",
+#                                            "--subimage", "statascale", "y", "LAST", "delta", "10", "projection", "x",
+#                                            "--inputname", "raw_s4_thr_{0}_ds".format(threshold),
+#                                            "--templateinput", "raw_s4_thr_{0}_ds/projections.xml".format(threshold),
+#                                            "--templateoutput", "stata-template.xml",
+#                                            "--templatexsl", "/org/contentmine/ami/tools/stataTemplate1.xsl"])
 
                 self.normami("ami-forestplot",
-                             ["--segment", "--template", "raw_s4_thr_{0}_ds/template.xml".format(threshold)])
+                             ["--segment", "--template", "raw_s4_thr_{0}_ds/spss-template.xml".format(threshold)])
 
         papers = []
         for ctree in project_contents:

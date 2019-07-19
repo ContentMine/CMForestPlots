@@ -27,6 +27,8 @@ HEADER_RE = re.compile(r"^.*\n\s*(M-H|[1I]V)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s
 TABLE_VALUE_SPLIT_RE = re.compile(r'([-~]{0,1}\d+[.,:]\d*\s*[/\[\({][-~]{0,1}\d+[.,:]\d*\s*,\s*[-~]{0,1}\d+[.,:]\d*[\]}\)])')
 TABLE_VALUE_GROK_RE = re.compile(r'([-~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-~]{0,1}\d+[.,:]\d*)\s*,\s*([-~]{0,1}\d+[.,:]\d*)[\]}\)]')
 
+TABLE_LINE_PARSE_RE = re.compile(r'^(.*?)\s+(\d+)\s+(\d+)\s+.*\s+([-~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-~]{0,1}\d+[.,:]\d*)\s*,\s*([-~]{0,1}\d+[.,:]\d*)[\]}\)]\s*$')
+
 class SPSSForestPlot(ForestPlot):
     """Concrete subclass for processing SPSS forest plots."""
 
@@ -138,7 +140,7 @@ class SPSSForestPlot(ForestPlot):
     def _decode_table_values_ocr(ocr_prose):
 
         # Fix some common number replacements in OCR
-        ocr_prose = ocr_prose.replace('§', '5')
+        ocr_prose = ocr_prose.replace('§', '5').replace('£', '[-')
 
         parts = TABLE_VALUE_SPLIT_RE.split(ocr_prose)
         values = []
@@ -158,6 +160,38 @@ class SPSSForestPlot(ForestPlot):
                 pass
         return values
 
+    @staticmethod
+    def _decode_table_lines_ocr(ocr_prose):
+
+        titles = []
+        values = []
+
+        for line in ocr_prose:
+
+            # Fix some common number replacements in OCR
+            line = line.replace('§', '5').replace('£', '[-')
+
+            matches = TABLE_LINE_PARSE_RE.match(line)
+            if not matches:
+                continue
+            groups = matches.groups()
+            title = groups[0]
+            try:
+                value = (forgiving_float(groups[-3]), forgiving_float(groups[-2]), forgiving_float(groups[-1]))
+
+                # We note that the leading - is often missed, but the ones within the block less so, so we
+                # have a sanity check here and see if adding a -ve to the first value helps
+                if not value[1] < value[0] < value[2]:
+                    if value[1] < -value[0] < value[2]:
+                        value = (-value[0], value[1], value[2])
+
+                titles.append(title.replace("Cl", "CI"))
+                values.append(value)
+            except AttributeError:
+                continue
+
+        return titles, values
+
 
     def _process_table(self):
         image_path = os.path.join(self.image_directory, "raw.body.table.png")
@@ -174,22 +208,38 @@ class SPSSForestPlot(ForestPlot):
                 subprocess.run(["tesseract", output_image_name, os.path.splitext(output_ocr_name)[0]],
                                capture_output=True)
 
-            titles = []
             ocr_prose = open(output_ocr_name, 'r').read()
             lines = [x.strip() for x in ocr_prose.split('\n') if x.strip()]
 
+            # In general tesseract will end up converting this in one of two forms:
+            # 1: it'll pull each column out one after another, and then make one single column from it all (this seems
+            #    to be the most common).
+            # 2: It'll actuall not parse the columns, and will preserve the tough layout of the table.
+            # Given that, we need to try to parse both.
+
+            hor_titles, hor_values = self._decode_table_lines_ocr(lines)
+
+            ver_titles = []
             for line in lines:
                 if line.startswith('Total'):
-                    titles.append(line.replace("Cl", "CI"))
+                    ver_titles.append(line.replace("Cl", "CI"))
                     break
-                titles.append(line)
+                ver_titles.append(line)
+            ver_values = SPSSForestPlot._decode_table_values_ocr(ocr_prose)
+            if len(ver_titles) != len(ver_values):
+                ver_titles = []
 
-            values = SPSSForestPlot._decode_table_values_ocr(ocr_prose)
+            values, titles = hor_values, hor_titles
+            if len(ver_titles) > len(hor_titles):
+                values, titles = ver_values, ver_titles
 
-            if values and len(values) == len(titles):
+            if values:
                 data = collections.OrderedDict(zip(titles, values))
                 flattened_data = [(title, values[0], values[1], values[2]) for title, values in data.items()]
-                print(flattened_data[0])
+                try:
+                    print(flattened_data[1])
+                except IndexError:
+                    pass
                 self.add_table_data(flattened_data)
 
     def process(self):

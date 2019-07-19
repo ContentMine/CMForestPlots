@@ -74,3 +74,29 @@ class DecodeExampleSPSSForestPlotTableValues(unittest.TestCase):
             (2.88, 1.5, 5.56),
             (1.07, 0.62, 1.84),
         ])
+
+    def test_value_example_4(self):
+        example = """
+1.00 £6.17, 4.17] 2008
+"""
+        values = SPSSForestPlot._decode_table_values_ocr(example)
+        self.assertEqual(values, [
+            (1.0, -6.17, 4.17),
+        ])
+
+class DecodeExampleSPSSForestPlotTableLines(unittest.TestCase):
+
+    def test_lines_example_1(self):
+        example = [
+            "Chua D (2010) 15 47 9 48 8.9% 1.70 (0.83, 3.50)",
+            "Dou-Dou Li (2015) 9 18 § 18 7.4% 1.80 (0.75, 4.32)",
+            "Fei Teng (2017) 22 26 6 26 9.0% 3.53 (1.72, 7.22]",
+        ]
+
+        titles, values = SPSSForestPlot._decode_table_lines_ocr(example)
+        self.assertEqual(titles, ["Chua D (2010)", "Dou-Dou Li (2015)", "Fei Teng (2017)"])
+        self.assertEqual(values, [
+            (1.7, 0.83, 3.5),
+            (1.8, 0.75, 4.32),
+            (3.53, 1.72, 7.22),
+        ])
