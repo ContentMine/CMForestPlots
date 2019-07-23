@@ -208,7 +208,7 @@ class SPSSForestPlot(ForestPlot):
                     print(flattened_data[1])
                 except IndexError:
                     pass
-                self.add_table_data(flattened_data)
+                self.primary_table.add_data(flattened_data)
 
     def process(self):
         """Process the possible SPSS forest plot."""
@@ -221,5 +221,5 @@ class SPSSForestPlot(ForestPlot):
             raise InvalidForestPlot
 
         self._process_table()
-        if not self.table_data:
+        if not self.primary_table.table_data:
             raise InvalidForestPlot

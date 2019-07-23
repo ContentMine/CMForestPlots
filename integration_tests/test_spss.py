@@ -26,7 +26,7 @@ class IntegrationTests(unittest.TestCase):
     def tearDown(self):
         pass #self.tempdir.cleanup()
 
-    def test_simple_spss(self):
+    def a_test_simple_spss(self):
         destination = shutil.copy("integration_tests/testdata/pmc5502154.pdf", self.tempdir.name)
         self.assertTrue(os.path.isfile(destination))
 

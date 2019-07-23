@@ -13,28 +13,13 @@ TABLE_VALUE_GROK_RE = re.compile(r'([-~]{0,1}\d+[.,: ]\d*)\s*[/\[\({]([-~]{0,1}\
 class InvalidForestPlot(Exception):
     """Raised if during processing we realise this isn't a valid forest plot."""
 
-class ForestPlot():
-    """Represents a single forest plot image held within a ctree."""
+class Table():
+    """Representing the data of a single table."""
 
-    def __init__(self, image_directory):
-        self.image_directory = image_directory
-
-        self.summary = {}
-        self.hetrogeneity = {}
-        self.overall_effect = {}
-
+    def __init__(self):
         self.table_data = []
 
-    def add_summary_information(self, estimator_type=None, model_type=None, confidence_interval=None):
-        """Add summary information about the forest plot."""
-        if estimator_type:
-            self.summary["Esimator type"] = estimator_type
-        if model_type:
-            self.summary["Model type"] = model_type
-        if confidence_interval:
-            self.summary["Confidence interval"] = confidence_interval
-
-    def add_table_data(self, data):
+    def add_data(self, data):
         """Adds more data about the table."""
         if not data:
             raise ValueError
@@ -45,6 +30,53 @@ class ForestPlot():
                 self.table_data.append(data)
             elif len(self.table_data[0]) < len(data):
                 self.table_data = [data]
+
+    def collapse_data(self):
+        """Takes the mode of all the table data entered and returns it as a single table."""
+
+        if not self.table_data:
+            return []
+        if len(self.table_data) == 1:
+            return self.table_data[0]
+
+        mode_data = []
+        for i in range(len(self.table_data[0])):
+            final_row = []
+            for datum in range(4):
+                data = []
+                for table in self.table_data:
+                    data.append(table[i][datum])
+                mode = max(set(data), key=data.count)
+                final_row.append(mode)
+            mode_data.append(tuple(final_row))
+        return mode_data
+
+class ForestPlot():
+    """Represents a single forest plot image held within a ctree."""
+
+    def __init__(self, image_directory):
+        self.image_directory = image_directory
+
+        self.summary = {}
+        self.hetrogeneity = {}
+        self.overall_effect = {}
+
+        self.table_list = [Table()]
+
+    def add_summary_information(self, estimator_type=None, model_type=None, confidence_interval=None):
+        """Add summary information about the forest plot."""
+        if estimator_type:
+            self.summary["Esimator type"] = estimator_type
+        if model_type:
+            self.summary["Model type"] = model_type
+        if confidence_interval:
+            self.summary["Confidence interval"] = confidence_interval
+
+    @property
+    def primary_table(self):
+        """Get the main table. Others may exist."""
+        return self.table_list[0]
+
 
     @staticmethod
     def _decode_table_values_ocr(ocr_prose):
@@ -65,27 +97,9 @@ class ForestPlot():
                 pass
         return values
 
-    def _collapse_table(self):
-        if not self.table_data:
-            return []
-        if len(self.table_data) == 1:
-            return self.table_data[0]
-
-        mode_data = []
-        for i in range(len(self.table_data[0])):
-            final_row = []
-            for datum in range(4):
-                data = []
-                for table in self.table_data:
-                    data.append(table[i][datum])
-                mode = max(set(data), key=data.count)
-                final_row.append(mode)
-            mode_data.append(tuple(final_row))
-        return mode_data
-
     def is_valid(self):
         """Based on the data collected, do we think this is a valid plot?"""
-        return self.table_data != []
+        return self.primary_table.table_data != []
 
     def save(self):
         """Writes the plot to an excel worksheet."""
@@ -115,8 +129,8 @@ class ForestPlot():
         count = count + 1
 
         worksheet.cell(row=count, column=1, value="Data:")
-        if self.table_data:
-            mode_table = self._collapse_table()
+        if self.primary_table.table_data:
+            mode_table = self.primary_table.collapse_data()
             for value in mode_table:
                 worksheet.cell(row=count, column=2, value=value[0])
                 worksheet.cell(row=count, column=3, value=value[1])

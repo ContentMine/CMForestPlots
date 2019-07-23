@@ -164,16 +164,11 @@ class StataForestPlot(ForestPlot):
                 if len(vertical_results[0]) > len(horizontal_results[0]):
                     results = vertical_results
 
+                print(results)
                 if results[0]:
                     data = collections.OrderedDict(zip(results[0], results[1]))
                     flattened_data = [(title, values[0], values[1], values[2]) for title, values in data.items()]
-                    try:
-                        print(flattened_data[1])
-                    except IndexError:
-                        pass
-                    self.add_table_data(flattened_data)
-
-
+                    self.primary_table.add_data(flattened_data)
         else:
             # treat as multiple graphs, will add later
             raise InvalidForestPlot
