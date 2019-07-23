@@ -7,6 +7,7 @@ import subprocess
 
 from forestplots.plots import InvalidForestPlot
 from forestplots.spssplots import SPSSForestPlot
+from forestplots.stataplots import StataForestPlot
 from forestplots.projections import Projections
 
 USE_DOCKER = False
@@ -128,13 +129,26 @@ class Controller():
             imagedirs = [os.path.join(pdf_images_dir, x) for x in os.listdir(pdf_images_dir) if x.startswith("image.")]
             for imagedir in imagedirs:
 
-                plot = SPSSForestPlot(imagedir)
-                try:
-                    plot.process()
-                except InvalidForestPlot:
-                    continue
-                paper.plots.append(plot)
-                plot.save()
+                if os.path.isdir(os.path.join(imagedir, "target_spss_150")):
+                    plot = SPSSForestPlot(imagedir)
+                    try:
+                        plot.process()
+                    except InvalidForestPlot:
+                        pass
+                    else:
+                        paper.plots.append(plot)
+                        plot.save()
+
+                if os.path.isdir(os.path.join(imagedir, "target_stata_150")):
+                    plot = StataForestPlot(imagedir)
+                    try:
+                        plot.process()
+                    except InvalidForestPlot:
+                        pass
+                    else:
+                        paper.plots.append(plot)
+                        plot.save()
+
 
         summary = {}
         for paper in papers:

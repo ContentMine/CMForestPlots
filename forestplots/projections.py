@@ -4,9 +4,10 @@ import collections
 import xml.etree.ElementTree as ET
 
 HorizontalLine = collections.namedtuple('HorizontalLine', 'y x1 x2')
-VerticalLine = collections.namedtuple('VerticalLine',  'x y1 y2')
+VerticalLine = collections.namedtuple('VerticalLine', 'x y1 y2')
 
 class Projections:
+    """Wrapper for normami projections.xml file."""
 
     def __init__(self, path):
         self._tree = ET.parse(path)
@@ -15,7 +16,7 @@ class Projections:
 
         line_groups = self._tree.findall('{http://www.w3.org/2000/svg}g')
         if len(line_groups) != 2:
-            raise AttributeException
+            raise AttributeError
 
         for group in line_groups:
             if group.attrib['class'] == 'horizontallines':

@@ -1,6 +1,6 @@
 import unittest
 
-from forestplots import SPSSForestPlot
+from forestplots import SPSSForestPlot, StataForestPlot, ForestPlot
 
 class DecodeExampleSPSSForestPlotTableValues(unittest.TestCase):
 
@@ -16,7 +16,7 @@ class DecodeExampleSPSSForestPlotTableValues(unittest.TestCase):
 
 328 100.0% 0.33 [-0.88, 1.54]
 """
-        values = SPSSForestPlot._decode_table_values_ocr(example)
+        values = ForestPlot._decode_table_values_ocr(example)
         self.assertEqual(values, [
             (-1.00, -6.17, 4.17),
             (-1.00, -3.79, 1.79),
@@ -32,7 +32,7 @@ class DecodeExampleSPSSForestPlotTableValues(unittest.TestCase):
 9.00 [-13.58, ~4.42]
 -4.40 [-9.41, 0.64]
 """
-        values = SPSSForestPlot._decode_table_values_ocr(example)
+        values = ForestPlot._decode_table_values_ocr(example)
         self.assertEqual(values, [
             (-4.0, -7.34, -0.66),
             (-9.0, -13.58, -4.42),
@@ -51,7 +51,7 @@ class DecodeExampleSPSSForestPlotTableValues(unittest.TestCase):
 
 328 100.0% 0.33 [-0.88, 1.54]
 """
-        values = SPSSForestPlot._decode_table_values_ocr(example)
+        values = ForestPlot._decode_table_values_ocr(example)
         self.assertEqual(values, [
             (-1.00, -6.17, 4.17),
             (-1.00, -3.79, 1.79),
@@ -68,18 +68,18 @@ class DecodeExampleSPSSForestPlotTableValues(unittest.TestCase):
 2.88 (1.50, §.56]
 1.07 (0.62, 1.84]
 """
-        values = SPSSForestPlot._decode_table_values_ocr(example)
+        values = ForestPlot._decode_table_values_ocr(example)
         self.assertEqual(values, [
             (1.57, 0.79, 3.12),
             (2.88, 1.5, 5.56),
             (1.07, 0.62, 1.84),
         ])
 
-    def test_value_example_4(self):
+    def test_value_example_5(self):
         example = """
 1.00 £6.17, 4.17] 2008
 """
-        values = SPSSForestPlot._decode_table_values_ocr(example)
+        values = ForestPlot._decode_table_values_ocr(example)
         self.assertEqual(values, [
             (1.0, -6.17, 4.17),
         ])
@@ -100,3 +100,66 @@ class DecodeExampleSPSSForestPlotTableLines(unittest.TestCase):
             (1.8, 0.75, 4.32),
             (3.53, 1.72, 7.22),
         ])
+
+
+
+class DecodeExampleStataForestPlotTableLines(unittest.TestCase):
+
+    def test_lines_example_1(self):
+        example = """
+Li (2005) 1.52 (0.34, 6.75) 517
+
+Huang (2009) 0.55 (0.35, 0.85) 93.10
+
+Su (2010) 3.75 (0.39, 35.92) 173
+
+Overall (I-squared = 51.7%, p = 0.126) 065 (0.44, 0.98) 100.00
+"""
+        titles, values, weights = StataForestPlot._decode_table_lines_ocr(example)
+        self.assertEqual(titles, ["Li (2005)", "Huang (2009)", "Su (2010)"])
+        self.assertEqual(values, [
+            (1.52, 0.34, 6.75),
+            (0.55, 0.35, 0.85),
+            (3.75, 0.39, 35.92),
+        ])
+        self.assertEqual(weights, [517.0, 93.1, 173.0])
+
+
+class DecodeExampleStataForestPlotColumnwise(unittest.TestCase):
+
+    def test_example_1(self):
+        example = """Li (2005)
+
+Huang (2000)
+
+Su (2010)
+
+Overall (l-squared = 51.7%, p = 0.126)
+
+
+
+1.82 (0.34, 6.75)
+
+0.85 (0.35, 0.85)
+
+3.75 (0.39, 35.92)
+
+0.65 (0.44, 0.98)
+
+5.47
+
+99.10
+
+173
+
+100.00
+"""
+        titles, values, weights = StataForestPlot._decode_table_columnwise_ocr(example)
+        self.assertEqual(titles, ["Li (2005)", "Huang (2000)", "Su (2010)", "Overall (l-squared = 51.7%, p = 0.126)"])
+        self.assertEqual(values, [
+            (1.82, 0.34, 6.75),
+            (0.85, 0.35, 0.85),
+            (3.75, 0.39, 35.92),
+            (0.65, 0.44, 0.98),
+        ])
+        self.assertEqual(weights, [5.47, 99.1, 173.0, 100.0])

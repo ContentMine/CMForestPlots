@@ -3,3 +3,4 @@
 from .controller import Controller
 from .plots import ForestPlot, InvalidForestPlot
 from .spssplots import SPSSForestPlot
+from .stataplots import StataForestPlot

@@ -1,6 +1,6 @@
 import unittest
 
-from forestplots import SPSSForestPlot
+from forestplots import SPSSForestPlot, StataForestPlot
 
 class DecodeExampleSPSSForestPlotHeaderSummary(unittest.TestCase):
 
@@ -18,3 +18,16 @@ class DecodeExampleSPSSForestPlotHeaderSummary(unittest.TestCase):
         example = 'Mean Difference\n1V. Fixed, 95% Cl\n'
         values = SPSSForestPlot._decode_header_summary_ocr(example)
         self.assertEqual(values, ("IV", "Fixed", "95"))
+
+
+class DecodeExampleStataForestPlotHeaderSummary(unittest.TestCase):
+
+    def test_example_1(self):
+        example = 'Study %\nID OR (95% Cl) Weight\n'
+        values = StataForestPlot._decode_header_ocr(example)
+        self.assertEqual(values, ("OR", "95"))
+
+    def test_example_2(self):
+        example = 'Study %\n10 OR (95% Cl) Weight\n'
+        values = StataForestPlot._decode_header_ocr(example)
+        self.assertEqual(values, ("OR", "95"))

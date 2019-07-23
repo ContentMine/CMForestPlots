@@ -24,9 +24,6 @@ PARTS_GROK_RE = re.compile(r"([\w7\?]+.?)\s*[=<>]\s*(\d+[,.]*\d*)")
 
 HEADER_RE = re.compile(r"^.*\n\s*(M-H|[1I]V)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
 
-TABLE_VALUE_SPLIT_RE = re.compile(r'([-~]{0,1}\d+[.,:]\d*\s*[/\[\({][-~]{0,1}\d+[.,:]\d*\s*,\s*[-~]{0,1}\d+[.,:]\d*[\]}\)])')
-TABLE_VALUE_GROK_RE = re.compile(r'([-~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-~]{0,1}\d+[.,:]\d*)\s*,\s*([-~]{0,1}\d+[.,:]\d*)[\]}\)]')
-
 TABLE_LINE_PARSE_RE = re.compile(r'^(.*?)\s+(\d+)\s+(\d+)\s+.*\s+([-~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-~]{0,1}\d+[.,:]\d*)\s*,\s*([-~]{0,1}\d+[.,:]\d*)[\]}\)]\s*$')
 
 class SPSSForestPlot(ForestPlot):
@@ -137,30 +134,6 @@ class SPSSForestPlot(ForestPlot):
                 continue
 
     @staticmethod
-    def _decode_table_values_ocr(ocr_prose):
-
-        # Fix some common number replacements in OCR
-        ocr_prose = ocr_prose.replace('§', '5').replace('£', '[-')
-
-        parts = TABLE_VALUE_SPLIT_RE.split(ocr_prose)
-        values = []
-        for part in parts:
-            try:
-                groups = TABLE_VALUE_GROK_RE.match(part).groups()
-                value = (forgiving_float(groups[0]), forgiving_float(groups[1]), forgiving_float(groups[2]))
-
-                # We note that the leading - is often missed, but the ones within the block less so, so we
-                # have a sanity check here and see if adding a -ve to the first value helps
-                if not value[1] < value[0] < value[2]:
-                    if value[1] < -value[0] < value[2]:
-                        value = (-value[0], value[1], value[2])
-
-                values.append(value)
-            except AttributeError:
-                pass
-        return values
-
-    @staticmethod
     def _decode_table_lines_ocr(ocr_prose):
 
         titles = []
@@ -225,7 +198,7 @@ class SPSSForestPlot(ForestPlot):
                     ver_titles.append(line.replace("Cl", "CI"))
                     break
                 ver_titles.append(line)
-            ver_values = SPSSForestPlot._decode_table_values_ocr(ocr_prose)
+            ver_values = self._decode_table_values_ocr(ocr_prose)
             if len(ver_titles) != len(ver_values):
                 ver_titles = []
 
