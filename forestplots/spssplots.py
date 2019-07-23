@@ -7,7 +7,7 @@ import re
 import subprocess
 
 from forestplots.plots import ForestPlot, InvalidForestPlot
-from forestplots.helpers import forgiving_float
+from forestplots.helpers import forgiving_float, sanity_check_values
 
 TAU_LABEL = "Tau"
 CHI_LABEL = "Chi"
@@ -151,12 +151,7 @@ class SPSSForestPlot(ForestPlot):
             title = groups[0]
             try:
                 value = (forgiving_float(groups[-3]), forgiving_float(groups[-2]), forgiving_float(groups[-1]))
-
-                # We note that the leading - is often missed, but the ones within the block less so, so we
-                # have a sanity check here and see if adding a -ve to the first value helps
-                if not value[1] < value[0] < value[2]:
-                    if value[1] < -value[0] < value[2]:
-                        value = (-value[0], value[1], value[2])
+                value = sanity_check_values(value)
 
                 titles.append(title.replace("Cl", "CI"))
                 values.append(value)

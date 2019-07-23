@@ -84,6 +84,46 @@ class DecodeExampleSPSSForestPlotTableValues(unittest.TestCase):
             (1.0, -6.17, 4.17),
         ])
 
+    def test_value_example_6(self):
+        example = """6.04 (0.34, 106.22)
+
+-_———e—_—— 216.7 (1.23, 380.41)
+
+——_+—_—_.
+
+<>
+
+14,82 (0.86, 256.77)
+"""
+        values = ForestPlot._decode_table_values_ocr(example)
+        self.assertEqual(values, [
+            (6.04, 0.34, 106.22),
+            (216.7, 1.23, 380.41),
+            (14.82, 0.86, 256.77),
+        ])
+
+
+    def test_value_example_7(self):
+        example = """6.04 (0 34, 106.22)
+
+21.67 (1.23. 380.41)
+
+14.82 (0.86, 256.77)
+
+$1.33 (9.43, 279.57)
+
+20.35 (5 64, 73.39)
+"""
+        values = ForestPlot._decode_table_values_ocr(example)
+        self.assertEqual(values, [
+            (6.04, 0.34, 106.22),
+            (21.67, 1.23, 380.41),
+            (14.82, 0.86, 256.77),
+            (51.33, 9.43, 279.57),
+            (20.35, 5.64, 73.39),
+        ])
+
+
 class DecodeExampleSPSSForestPlotTableLines(unittest.TestCase):
 
     def test_lines_example_1(self):
@@ -116,13 +156,14 @@ Su (2010) 3.75 (0.39, 35.92) 173
 Overall (I-squared = 51.7%, p = 0.126) 065 (0.44, 0.98) 100.00
 """
         titles, values, weights = StataForestPlot._decode_table_lines_ocr(example)
-        self.assertEqual(titles, ["Li (2005)", "Huang (2009)", "Su (2010)"])
+        self.assertEqual(titles, ["Li (2005)", "Huang (2009)", "Su (2010)", "Overall"])
         self.assertEqual(values, [
             (1.52, 0.34, 6.75),
             (0.55, 0.35, 0.85),
             (3.75, 0.39, 35.92),
+            (65.0, 0.44, 0.98),
         ])
-        self.assertEqual(weights, [517.0, 93.1, 173.0])
+        self.assertEqual(weights, [517.0, 93.1, 173.0, 100.0])
 
 
 class DecodeExampleStataForestPlotColumnwise(unittest.TestCase):
@@ -155,7 +196,7 @@ Overall (l-squared = 51.7%, p = 0.126)
 100.00
 """
         titles, values, weights = StataForestPlot._decode_table_columnwise_ocr(example)
-        self.assertEqual(titles, ["Li (2005)", "Huang (2000)", "Su (2010)", "Overall (l-squared = 51.7%, p = 0.126)"])
+        self.assertEqual(titles, ["Li (2005)", "Huang (2000)", "Su (2010)", "Overall"])
         self.assertEqual(values, [
             (1.82, 0.34, 6.75),
             (0.85, 0.35, 0.85),

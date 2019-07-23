@@ -490,3 +490,92 @@ class IntegrationTests(unittest.TestCase):
                             print ("OCR error in {2}: expected '{0}' vs actual '{1}'.".format(value_expected, value_actual, result))
                             error_count = error_count + 1
                 self.assertEqual(1.0 - (float(error_count) / float(total_count)), 1.0)
+
+
+
+
+    def test_simple_stata_1(self):
+        destination = shutil.copy("integration_tests/testdata/pmc5882397.pdf", self.tempdir.name)
+        self.assertTrue(os.path.isfile(destination))
+
+        c = Controller(self.tempdir.name)
+        c.main()
+
+        raw = open(os.path.join(self.tempdir.name, "forestplots.json")).read()
+        data = json.loads(raw)
+
+        # This paper has 2 forest plots
+        self.assertEqual(len(data), 2)
+
+        for result in data:
+            workbook = openpyxl.load_workbook(result)
+            worksheet = workbook.active
+
+            estimator_type = worksheet.cell(row=1, column=2).value
+            confidence_interval = worksheet.cell(row=2, column=2).value
+            count = 4
+
+            self.assertEqual(worksheet.cell(row=count, column=1).value, "Hetrogeneity:")
+            count = count + 1
+
+            self.assertEqual(worksheet.cell(row=count, column=1).value, "Overall Effect:")
+            count = count + 1
+
+            self.assertEqual(worksheet.cell(row=count, column=1).value, "Data:")
+            data = []
+            while True:
+                key = worksheet.cell(row=count, column=2).value
+                value1 = worksheet.cell(row=count, column=3).value
+                value2 = worksheet.cell(row=count, column=4).value
+                value3 = worksheet.cell(row=count, column=5).value
+                count = count + 1
+                if not key:
+                    count = count + 1
+                    break
+                else:
+                    data.append((key, float(value1), float(value2), float(value3)))
+
+
+            if result.find("image.5.2.170") != -1:
+                self.assertEqual(estimator_type, "OR")
+                self.assertEqual(confidence_interval, "95")
+                expected_data = [
+                    ("Willams (2006)", 6.04, 0.34, 106.22), # Should be Williams
+                    ("Lee (2006)", 21.67, 1.23, 380.41),
+                    ("Durr (2010)", 14.82, 0.86, 256.77),
+                    ("Negeta (2012)", 51.33, 9.43, 279.57), # Should be Nagata
+                    ("Overall", 20.35, 5.64, 73.39),
+                ]
+                self.assertEqual(len(expected_data), len(data))
+                total_count = 0
+                error_count = 0
+                for expected, actual in zip(expected_data, data):
+                    for value_expected, value_actual in zip(expected, actual):
+                        total_count = total_count + 1
+                        if value_expected != value_actual:
+                            print ("OCR error in {2}: expected '{0}' vs actual '{1}'.".format(value_expected, value_actual, result))
+                            error_count = error_count + 1
+                self.assertEqual(1.0 - (float(error_count) / float(total_count)), 1.0)
+
+
+            if result.find("image.7.1.170") != -1:
+                self.assertEqual(estimator_type, "OR")
+                self.assertEqual(confidence_interval, "95")
+                expected_data = [
+                    ("Li (2005)", 152.0, 0.34, 6.75), # should be 1.52
+                    ("Huang (2009)", 0.55, 0.35, 0.85),
+                    ("Su (2010)", 3.75, 0.39, 35.92),
+                    ("Overall", 0.65, 0.44, 0.98),
+                ]
+                self.assertEqual(len(expected_data), len(data))
+                total_count = 0
+                error_count = 0
+                for expected, actual in zip(expected_data, data):
+                    for value_expected, value_actual in zip(expected, actual):
+                        total_count = total_count + 1
+                        if value_expected != value_actual:
+                            print ("OCR error in {2}: expected '{0}' vs actual '{1}'.".format(value_expected, value_actual, result))
+                            error_count = error_count + 1
+                self.assertEqual(1.0 - (float(error_count) / float(total_count)), 1.0)
+
+

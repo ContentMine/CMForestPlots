@@ -6,11 +6,11 @@ import re
 import subprocess
 
 from forestplots.plots import ForestPlot, InvalidForestPlot
-from forestplots.helpers import forgiving_float
+from forestplots.helpers import forgiving_float, sanity_check_values
 
 HEADER_RE = re.compile(r".*(OR)\s*[\(\[](\d+)%.*")
-TABLE_LINE_PARSE_RE = re.compile(r"\s*(.*?)\s*([-~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-~]{0,1}\d+[.,:]\d*)\s*,\s*([-~]{0,1}\d+[.,:]\d*)[\]}\)]\s*([-~]{0,1}\d+[.,:]?\d*)")
-OVERALL_LINE_RE = re.compile(r"Overall \([li]-squared = (\d+[.,:]?\d*)%[.,]\s*p\s*=\s*(\d+[.,:]?\d*)\)")
+TABLE_LINE_PARSE_RE = re.compile(r"\s*(.*?)[\s—]*([-~]{0,1}\d+[.,:]?\d*)\s*[/\[\({]([-~]{0,1}\d+[.,:]?\d*)\s*,\s*([-~]{0,1}\d+[.,:]?\d*)[\]}\)]\s*([-~]{0,1}\d+[.,:]?\d*)")
+OVERALL_LINE_RE = re.compile(r"Overall [\({\[].*squared = (\d+[.,:]?\d*)%[.,]\s*p\s*=\s*(\d+[.,:]?\d*)[\)}\]]")
 
 class StataForestPlot(ForestPlot):
     """Concrete subclass for processing Stata forest plots."""
@@ -65,7 +65,7 @@ class StataForestPlot(ForestPlot):
             if not matches:
                 titles.append(line)
             else:
-                titles.append(line)
+                titles.append("Overall")
                 break
 
         # having got the titles, now try to find the values
@@ -99,14 +99,12 @@ class StataForestPlot(ForestPlot):
             title = groups[0]
             try:
                 value = (forgiving_float(groups[1]), forgiving_float(groups[2]), forgiving_float(groups[3]))
+                value = sanity_check_values(value)
 
-                # We note that the leading - is often missed, but the ones within the block less so, so we
-                # have a sanity check here and see if adding a -ve to the first value helps
-                if not value[1] < value[0] < value[2]:
-                    if value[1] < -value[0] < value[2]:
-                        value = (-value[0], value[1], value[2])
+                if OVERALL_LINE_RE.match(title):
+                    title = "Overall"
 
-                titles.append(title.replace("Cl", "CI"))
+                titles.append(title)
                 values.append(value)
 
                 weight = forgiving_float(groups[-1])
@@ -117,6 +115,7 @@ class StataForestPlot(ForestPlot):
         return titles, values, weights
 
     def _process_body(self):
+        print(self.image_directory)
         header_image_path = os.path.join(self.image_directory, "raw.body.png")
         if not os.path.isfile(header_image_path):
             raise InvalidForestPlot

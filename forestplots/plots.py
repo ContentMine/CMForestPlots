@@ -5,10 +5,10 @@ import re
 
 import openpyxl
 
-from forestplots.helpers import forgiving_float
+from forestplots.helpers import forgiving_float, sanity_check_values
 
-TABLE_VALUE_SPLIT_RE = re.compile(r'([-~]{0,1}\d+[.,:]\d*\s*[/\[\({][-~]{0,1}\d+[.,:]\d*\s*,\s*[-~]{0,1}\d+[.,:]\d*[\]}\)])')
-TABLE_VALUE_GROK_RE = re.compile(r'([-~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-~]{0,1}\d+[.,:]\d*)\s*,\s*([-~]{0,1}\d+[.,:]\d*)[\]}\)]')
+TABLE_VALUE_SPLIT_RE = re.compile(r'([-~]{0,1}\d+[.,: ]\d*\s*[/\[\({][-~]{0,1}\d+[.,: ]\d*\s*[.,]\s*[-~]{0,1}\d+[.,: ]\d*[\]}\)])')
+TABLE_VALUE_GROK_RE = re.compile(r'([-~]{0,1}\d+[.,: ]\d*)\s*[/\[\({]([-~]{0,1}\d+[.,: ]\d*)\s*[.,]\s*([-~]{0,1}\d+[.,: ]\d*)[\]}\)]')
 
 class InvalidForestPlot(Exception):
     """Raised if during processing we realise this isn't a valid forest plot."""
@@ -50,7 +50,7 @@ class ForestPlot():
     def _decode_table_values_ocr(ocr_prose):
 
         # Fix some common number replacements in OCR
-        ocr_prose = ocr_prose.replace('§', '5').replace('£', '[-')
+        ocr_prose = ocr_prose.replace('§', '5').replace('$', '5').replace('£', '[-')
 
         parts = TABLE_VALUE_SPLIT_RE.split(ocr_prose)
         values = []
@@ -58,12 +58,7 @@ class ForestPlot():
             try:
                 groups = TABLE_VALUE_GROK_RE.match(part).groups()
                 value = (forgiving_float(groups[0]), forgiving_float(groups[1]), forgiving_float(groups[2]))
-
-                # We note that the leading - is often missed, but the ones within the block less so, so we
-                # have a sanity check here and see if adding a -ve to the first value helps
-                if not value[1] < value[0] < value[2]:
-                    if value[1] < -value[0] < value[2]:
-                        value = (-value[0], value[1], value[2])
+                value = sanity_check_values(value)
 
                 values.append(value)
             except AttributeError:
