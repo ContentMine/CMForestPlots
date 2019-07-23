@@ -160,7 +160,6 @@ class SPSSForestPlot(ForestPlot):
 
         return titles, values
 
-
     def _process_table(self):
         image_path = os.path.join(self.image_directory, "raw.body.table.png")
         if not os.path.isfile(image_path):
@@ -209,6 +208,40 @@ class SPSSForestPlot(ForestPlot):
                 except IndexError:
                     pass
                 self.primary_table.add_data(flattened_data)
+
+    def _write_data_to_worksheet(self, worksheet):
+
+        count = 1
+        for key, value in self.summary.items():
+            worksheet.cell(row=count, column=1, value=key)
+            worksheet.cell(row=count, column=2, value=value)
+            count = count + 1
+        count = count + 1
+
+        worksheet.cell(row=count, column=1, value="Hetrogeneity:")
+        for key, value in self.hetrogeneity.items():
+            worksheet.cell(row=count, column=2, value=key)
+            worksheet.cell(row=count, column=3, value=value)
+            count = count + 1
+        count = count + 1
+
+        worksheet.cell(row=count, column=1, value="Overall Effect:")
+        for key, value in self.overall_effect.items():
+            worksheet.cell(row=count, column=2, value=key)
+            worksheet.cell(row=count, column=3, value=value)
+            count = count + 1
+        count = count + 1
+
+        worksheet.cell(row=count, column=1, value="Data:")
+        if self.primary_table.table_data:
+            mode_table = self.primary_table.collapse_data()
+            for value in mode_table:
+                worksheet.cell(row=count, column=2, value=value[0])
+                worksheet.cell(row=count, column=3, value=value[1])
+                worksheet.cell(row=count, column=4, value=value[2])
+                worksheet.cell(row=count, column=5, value=value[3])
+                count += 1
+
 
     def process(self):
         """Process the possible SPSS forest plot."""

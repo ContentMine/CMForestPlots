@@ -1,6 +1,6 @@
 import unittest
 
-from forestplots import SPSSForestPlot, StataForestPlot, ForestPlot
+from forestplots import SPSSForestPlot, StataForestPlot, ForestPlot, StataTableResults
 
 class DecodeExampleSPSSForestPlotTableValues(unittest.TestCase):
 
@@ -155,15 +155,17 @@ Su (2010) 3.75 (0.39, 35.92) 173
 
 Overall (I-squared = 51.7%, p = 0.126) 065 (0.44, 0.98) 100.00
 """
-        titles, values, weights = StataForestPlot._decode_table_lines_ocr(example)
-        self.assertEqual(titles, ["Li (2005)", "Huang (2009)", "Su (2010)", "Overall"])
-        self.assertEqual(values, [
+        results = StataForestPlot._decode_table_lines_ocr(example)
+        self.assertEqual(results.titles, ["Li (2005)", "Huang (2009)", "Su (2010)", "Overall"])
+        self.assertEqual(results.values, [
             (1.52, 0.34, 6.75),
             (0.55, 0.35, 0.85),
             (3.75, 0.39, 35.92),
             (65.0, 0.44, 0.98),
         ])
-        self.assertEqual(weights, [517.0, 93.1, 173.0, 100.0])
+        self.assertEqual(results.weights, [517.0, 93.1, 173.0, 100.0])
+        self.assertEqual(results.i_squared, 51.7)
+        self.assertEqual(results.probability, 0.126)
 
 
 class DecodeExampleStataForestPlotColumnwise(unittest.TestCase):
@@ -195,12 +197,14 @@ Overall (l-squared = 51.7%, p = 0.126)
 
 100.00
 """
-        titles, values, weights = StataForestPlot._decode_table_columnwise_ocr(example)
-        self.assertEqual(titles, ["Li (2005)", "Huang (2000)", "Su (2010)", "Overall"])
-        self.assertEqual(values, [
+        results = StataForestPlot._decode_table_columnwise_ocr(example)
+        self.assertEqual(results.titles, ["Li (2005)", "Huang (2000)", "Su (2010)", "Overall"])
+        self.assertEqual(results.values, [
             (1.82, 0.34, 6.75),
             (0.85, 0.35, 0.85),
             (3.75, 0.39, 35.92),
             (0.65, 0.44, 0.98),
         ])
-        self.assertEqual(weights, [5.47, 99.1, 173.0, 100.0])
+        self.assertEqual(results.weights, [5.47, 99.1, 173.0, 100.0])
+        self.assertEqual(results.i_squared, 51.7)
+        self.assertEqual(results.probability, 0.126)

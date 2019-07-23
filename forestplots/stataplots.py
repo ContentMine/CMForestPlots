@@ -8,6 +8,8 @@ import subprocess
 from forestplots.plots import ForestPlot, InvalidForestPlot
 from forestplots.helpers import forgiving_float, sanity_check_values
 
+StataTableResults = collections.namedtuple('StataTableResults', 'titles values weights i_squared probability')
+
 HEADER_RE = re.compile(r".*(OR)\s*[\(\[](\d+)%.*")
 TABLE_LINE_PARSE_RE = re.compile(r"\s*(.*?)[\s—]*([-~]{0,1}\d+[.,:]?\d*)\s*[/\[\({]([-~]{0,1}\d+[.,:]?\d*)\s*,\s*([-~]{0,1}\d+[.,:]?\d*)[\]}\)]\s*([-~]{0,1}\d+[.,:]?\d*)")
 OVERALL_LINE_RE = re.compile(r"Overall [\({\[].*squared = (\d+[.,:]?\d*)%[.,]\s*p\s*=\s*(\d+[.,:]?\d*)[\)}\]]")
@@ -54,6 +56,8 @@ class StataForestPlot(ForestPlot):
     def _decode_table_columnwise_ocr(ocr_prose):
 
         titles = []
+        i_squared = None
+        probability = None
         lines = [x.strip() for x in ocr_prose.split('\n') if x.strip()]
 
         for line in lines:
@@ -61,11 +65,13 @@ class StataForestPlot(ForestPlot):
             # Fix some common number replacements in OCR
             line = line.replace('§', '5').replace('£', '[-')
 
-            matches = OVERALL_LINE_RE.match(line)
-            if not matches:
+            overall_match = OVERALL_LINE_RE.match(line)
+            if not overall_match:
                 titles.append(line)
             else:
                 titles.append("Overall")
+                i_squared = forgiving_float(overall_match.groups()[0])
+                probability = forgiving_float(overall_match.groups()[1])
                 break
 
         # having got the titles, now try to find the values
@@ -77,7 +83,7 @@ class StataForestPlot(ForestPlot):
         # now see if we can extract the weights from the last n lines
         weights = [forgiving_float(x) for x in lines[-1 * len(titles):]]
 
-        return titles, values, weights
+        return StataTableResults(titles, values, weights, i_squared, probability)
 
     @staticmethod
     def _decode_table_lines_ocr(ocr_prose):
@@ -85,6 +91,8 @@ class StataForestPlot(ForestPlot):
         titles = []
         values = []
         weights = []
+        i_squared = None
+        probability = None
 
         lines = [x.strip() for x in ocr_prose.split('\n') if x.strip()]
         for line in lines:
@@ -101,8 +109,11 @@ class StataForestPlot(ForestPlot):
                 value = (forgiving_float(groups[1]), forgiving_float(groups[2]), forgiving_float(groups[3]))
                 value = sanity_check_values(value)
 
-                if OVERALL_LINE_RE.match(title):
+                overall_match = OVERALL_LINE_RE.match(title)
+                if overall_match:
                     title = "Overall"
+                    i_squared = forgiving_float(overall_match.groups()[0])
+                    probability = forgiving_float(overall_match.groups()[1])
 
                 titles.append(title)
                 values.append(value)
@@ -112,10 +123,9 @@ class StataForestPlot(ForestPlot):
             except AttributeError:
                 continue
 
-        return titles, values, weights
+        return StataTableResults(titles, values, weights, i_squared, probability)
 
     def _process_body(self):
-        print(self.image_directory)
         header_image_path = os.path.join(self.image_directory, "raw.body.png")
         if not os.path.isfile(header_image_path):
             raise InvalidForestPlot
@@ -149,8 +159,8 @@ class StataForestPlot(ForestPlot):
 
                 ocr_prose = open(output_ocr_name, 'r').read()
 
-                horizontal_results = ([], [], [])
-                vertical_results = ([], [], [])
+                horizontal_results = StataTableResults([], [], [], None, None)
+                vertical_results = StataTableResults([], [], [], None, None)
                 try:
                     horizontal_results = self._decode_table_lines_ocr(ocr_prose)
                 except ValueError:
@@ -161,23 +171,45 @@ class StataForestPlot(ForestPlot):
                     pass
 
                 results = horizontal_results
-                if len(vertical_results[0]) > len(horizontal_results[0]):
+                if len(vertical_results.titles) > len(horizontal_results.titles):
                     results = vertical_results
 
-                print(results)
                 if results[0]:
-                    data = collections.OrderedDict(zip(results[0], results[1]))
-                    flattened_data = [(title, values[0], values[1], values[2]) for title, values in data.items()]
+                    data = zip(results.titles, results.values, results.weights)
+                    flattened_data = [(title, value[0], value[1], value[2], weight) for title, value, weight in data]
                     self.primary_table.add_data(flattened_data)
+                    self.overall_effect["i^2"] = results.i_squared
+                    self.overall_effect["p"] = results.probability
         else:
             # treat as multiple graphs, will add later
             raise InvalidForestPlot
 
 
+    def _write_data_to_worksheet(self, worksheet):
+        count = 1
+        for key, value in self.summary.items():
+            worksheet.cell(row=count, column=1, value=key)
+            worksheet.cell(row=count, column=2, value=value)
+            count = count + 1
+        count = count + 1
 
-        # depending on how tesseract feels, it'll have either kept the rows of the table intact or it'll
-        # have read each column in turn, listing them one after another in the file
+        worksheet.cell(row=count, column=1, value="Overall Effect:")
+        for key, value in self.overall_effect.items():
+            worksheet.cell(row=count, column=2, value=key)
+            worksheet.cell(row=count, column=3, value=value)
+            count = count + 1
+        count = count + 1
 
+        worksheet.cell(row=count, column=1, value="Data:")
+        if self.primary_table.table_data:
+            mode_table = self.primary_table.collapse_data()
+            for value in mode_table:
+                worksheet.cell(row=count, column=2, value=value[0])
+                worksheet.cell(row=count, column=3, value=value[1])
+                worksheet.cell(row=count, column=4, value=value[2])
+                worksheet.cell(row=count, column=5, value=value[3])
+                worksheet.cell(row=count, column=6, value=value[4])
+                count += 1
 
 
 

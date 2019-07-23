@@ -42,7 +42,7 @@ class Table():
         mode_data = []
         for i in range(len(self.table_data[0])):
             final_row = []
-            for datum in range(4):
+            for datum in range(len(self.table_data[0][i])):
                 data = []
                 for table in self.table_data:
                     data.append(table[i][datum])
@@ -101,41 +101,15 @@ class ForestPlot():
         """Based on the data collected, do we think this is a valid plot?"""
         return self.primary_table.table_data != []
 
+    def _write_data_to_worksheet(self, worksheet):
+        raise NotImplementedError
+
     def save(self):
         """Writes the plot to an excel worksheet."""
         workbook = openpyxl.Workbook()
         worksheet = workbook.active
         worksheet.title = "Summary"
-        count = 1
 
-        for key, value in self.summary.items():
-            worksheet.cell(row=count, column=1, value=key)
-            worksheet.cell(row=count, column=2, value=value)
-            count = count + 1
-        count = count + 1
-
-        worksheet.cell(row=count, column=1, value="Hetrogeneity:")
-        for key, value in self.hetrogeneity.items():
-            worksheet.cell(row=count, column=2, value=key)
-            worksheet.cell(row=count, column=3, value=value)
-            count = count + 1
-        count = count + 1
-
-        worksheet.cell(row=count, column=1, value="Overall Effect:")
-        for key, value in self.overall_effect.items():
-            worksheet.cell(row=count, column=2, value=key)
-            worksheet.cell(row=count, column=3, value=value)
-            count = count + 1
-        count = count + 1
-
-        worksheet.cell(row=count, column=1, value="Data:")
-        if self.primary_table.table_data:
-            mode_table = self.primary_table.collapse_data()
-            for value in mode_table:
-                worksheet.cell(row=count, column=2, value=value[0])
-                worksheet.cell(row=count, column=3, value=value[1])
-                worksheet.cell(row=count, column=4, value=value[2])
-                worksheet.cell(row=count, column=5, value=value[3])
-                count += 1
+        self._write_data_to_worksheet(worksheet)
 
         workbook.save(os.path.join(self.image_directory, "results.xlsx"))
