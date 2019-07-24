@@ -123,6 +123,19 @@ $1.33 (9.43, 279.57)
             (20.35, 5.64, 73.39),
         ])
 
+    def test_value_example_8(self):
+        example = """5.06 (2.19, 11.69)
+(Excluded)
+
+2.57 (0.71, 9.31)"""
+        values = ForestPlot._decode_table_values_ocr(example)
+        self.assertEqual(values, [
+            (5.06, 2.19, 11.69),
+            ("Excluded", "Excluded", "Excluded"),
+            (2.57, 0.71, 9.31),
+        ])
+
+
 
 class DecodeExampleSPSSForestPlotTableLines(unittest.TestCase):
 
@@ -197,7 +210,9 @@ Overall (l-squared = 51.7%, p = 0.126)
 
 100.00
 """
-        results = StataForestPlot._decode_table_columnwise_ocr(example)
+        result_list = StataForestPlot._decode_table_columnwise_ocr(example)
+        self.assertEqual(len(result_list), 1)
+        results = result_list[0]
         self.assertEqual(results.titles, ["Li (2005)", "Huang (2000)", "Su (2010)", "Overall"])
         self.assertEqual(results.values, [
             (1.82, 0.34, 6.75),
@@ -208,3 +223,106 @@ Overall (l-squared = 51.7%, p = 0.126)
         self.assertEqual(results.weights, [5.47, 99.1, 173.0, 100.0])
         self.assertEqual(results.i_squared, 51.7)
         self.assertEqual(results.probability, 0.126)
+
+    def test_example_2(self):
+        example = """
+Asians
+Wan (2007)
+
+Lee (2008)
+
+Su (2010)
+
+Lin (2013)
+
+Zhang (2014)
+
+Subtotal (I-squared = 0.0%, p = 0.821)
+
+Caucasians
+
+Williams (2006)
+
+Durr (2010)
+
+Supic (2011)
+
+Subtotal (|-squared = 25.2%, p = 0.263)
+
+Overall (I-squared = 12.0%, p = 0.337)
+
+mT alll
+
+
+
+14.54 (0.78, 269.74)
+13.46 (0.76, 237.20)
+34.24 (1.92, 610.88)
+5.78 (0.31, 107.92)
+55.39 (3.36, 913.91)
+22.99 (6.41, 82.43)
+
+17.44 (1.03, 296.37)
+25.77 (1.50, 443.86)
+4.24 (1.82, 9.87)
+7.24 (3.35, 15.62)
+
+11.80 (6.14, 22.66)
+
+5.25
+6.49
+3.92
+7.43
+5.86
+28.94
+
+7.08
+5.55
+58.43
+71.06
+
+100.00
+
+"""
+        result_list = StataForestPlot._decode_table_columnwise_ocr(example)
+        self.assertEqual(len(result_list), 3)
+
+        results = result_list[0]
+        self.assertEqual(results.title, "Asians")
+        self.assertEqual(results.titles, ["Wan (2007)", "Lee (2008)", "Su (2010)", "Lin (2013)", "Zhang (2014)", "Subtotal"])
+        self.assertEqual(results.values, [
+            (14.54, 0.78, 269.74),
+            (13.46, 0.76, 237.2),
+            (34.24, 1.92, 610.88),
+            (5.78, 0.31, 107.92),
+            (55.39, 3.36, 913.91),
+            (22.99, 6.41, 82.43),
+
+        ])
+        self.assertEqual(results.weights, [5.25, 6.49, 3.92, 7.43, 5.86, 28.94])
+        self.assertEqual(results.i_squared, 0.0)
+        self.assertEqual(results.probability, 0.821)
+
+        results = result_list[1]
+        self.assertEqual(results.title, "Caucasians")
+        self.assertEqual(results.titles, ["Williams (2006)", "Durr (2010)", "Supic (2011)", "Subtotal"])
+        self.assertEqual(results.values, [
+            (17.44, 1.03, 296.37),
+            (25.77, 1.5, 443.86),
+            (4.24, 1.82, 9.87),
+            (7.24, 3.35, 15.62),
+
+        ])
+        self.assertEqual(results.weights, [7.08, 5.55, 58.43, 71.06])
+        self.assertEqual(results.i_squared, 25.2)
+        self.assertEqual(results.probability, 0.263)
+
+        results = result_list[2]
+        self.assertEqual(results.titles, ["Overall"])
+        self.assertEqual(results.values, [
+            (11.8, 6.14, 22.66),
+        ])
+        self.assertEqual(results.weights, [100.0])
+        self.assertEqual(results.i_squared, 12.0)
+        self.assertEqual(results.probability, 0.337)
+

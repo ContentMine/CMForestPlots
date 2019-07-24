@@ -504,10 +504,11 @@ class IntegrationTests(unittest.TestCase):
         raw = open(os.path.join(self.tempdir.name, "forestplots.json")).read()
         data = json.loads(raw)
 
-        # This paper has 2 forest plots
-        self.assertEqual(len(data), 2)
+        # This paper has 4 forest plots: 2 single table, 2 multi-table
+        self.assertEqual(len(data), 4)
 
         for result in data:
+            print(result)
             workbook = openpyxl.load_workbook(result)
             worksheet = workbook.active
 
@@ -515,36 +516,68 @@ class IntegrationTests(unittest.TestCase):
             confidence_interval = worksheet.cell(row=2, column=2).value
             count = 4
 
-            self.assertEqual(worksheet.cell(row=count, column=1).value, "Hetrogeneity:")
-            count = count + 1
-
             self.assertEqual(worksheet.cell(row=count, column=1).value, "Overall Effect:")
-            count = count + 1
-
-            self.assertEqual(worksheet.cell(row=count, column=1).value, "Data:")
-            data = []
+            overall_effect = {}
             while True:
                 key = worksheet.cell(row=count, column=2).value
-                value1 = worksheet.cell(row=count, column=3).value
-                value2 = worksheet.cell(row=count, column=4).value
-                value3 = worksheet.cell(row=count, column=5).value
+                value = worksheet.cell(row=count, column=3).value
                 count = count + 1
                 if not key:
-                    count = count + 1
                     break
                 else:
-                    data.append((key, float(value1), float(value2), float(value3)))
+                    overall_effect[key] = float(value)
 
+            tables = []
 
-            if result.find("image.5.2.170") != -1:
+            while True:
+                title = worksheet.cell(row=count, column=1).value
+                if not title:
+                    print(tables)
+                    break
+                data = []
+                while True:
+                    key = worksheet.cell(row=count, column=2).value
+                    value1 = worksheet.cell(row=count, column=3).value
+                    value2 = worksheet.cell(row=count, column=4).value
+                    value3 = worksheet.cell(row=count, column=5).value
+                    weight = worksheet.cell(row=count, column=6).value
+                    count = count + 1
+                    if not key:
+                        break
+                    else:
+                        try:
+                            data.append((key, float(value1), float(value2), float(value3), float(weight)))
+                        except ValueError:
+                            # Something failed to parse, so just dump the lot here so it shows up in the error asserts
+                            data.append((key, value1, value2, value3, float(weight)))
+                tables.append((title, data))
+
+            if result.find("image.5.1.167") != -1:
+                self.assertEqual(len(tables), 3)
                 self.assertEqual(estimator_type, "OR")
                 self.assertEqual(confidence_interval, "95")
+                self.assertEqual(overall_effect, {
+                    "i^2": 12.0,
+                    "p": 0.337,
+                })
+                self.assertEqual([x[0] for x in tables], ["Asians:", "Caucasians:", "Overall:"])
+
+            if result.find("image.5.2.170") != -1:
+                self.assertEqual(len(tables), 1)
+                self.assertEqual(estimator_type, "OR")
+                self.assertEqual(confidence_interval, "95")
+                self.assertEqual(overall_effect, {
+                    "i^2": 0.0,
+                    "p": 0.597,
+                })
+                self.assertEqual(tables[0][0], "Data:")
+                data = tables[0][1]
                 expected_data = [
-                    ("Willams (2006)", 6.04, 0.34, 106.22), # Should be Williams
-                    ("Lee (2006)", 21.67, 1.23, 380.41),
-                    ("Durr (2010)", 14.82, 0.86, 256.77),
-                    ("Negeta (2012)", 51.33, 9.43, 279.57), # Should be Nagata
-                    ("Overall", 20.35, 5.64, 73.39),
+                    ("Willams (2006)", 6.04, 0.34, 106.22, 33.27), # Should be Williams
+                    ("Lee (2006)", 21.67, 1.23, 380.41, 20.87),  # should be 29.97
+                    ("Durr (2010)", 14.82, 0.86, 256.77, 26.56),
+                    ("Negeta (2012)", 51.33, 9.43, 279.57, 1921.0), # Should be Nagata and 19.21
+                    ("Overall", 20.35, 5.64, 73.39, 100.0),
                 ]
                 self.assertEqual(len(expected_data), len(data))
                 total_count = 0
@@ -557,15 +590,31 @@ class IntegrationTests(unittest.TestCase):
                             error_count = error_count + 1
                 self.assertEqual(1.0 - (float(error_count) / float(total_count)), 1.0)
 
-
-            if result.find("image.7.1.170") != -1:
+            if result.find("image.6.1.140") != -1:
+                self.assertEqual(len(tables), 3)
                 self.assertEqual(estimator_type, "OR")
                 self.assertEqual(confidence_interval, "95")
+                self.assertEqual(overall_effect, {
+                    "i^2": 73.1,
+                    "p": 0.0,
+                })
+                self.assertEqual([x[0] for x in tables], ["Caucasians:", "Asians:", "Overall:"])
+
+            if result.find("image.7.1.170") != -1:
+                self.assertEqual(len(tables), 1)
+                self.assertEqual(estimator_type, "OR")
+                self.assertEqual(confidence_interval, "95")
+                self.assertEqual(overall_effect, {
+                    "i^2": 51.7,
+                    "p": 0.126,
+                })
+                self.assertEqual(tables[0][0], "Data:")
+                data = tables[0][1]
                 expected_data = [
-                    ("Li (2005)", 152.0, 0.34, 6.75), # should be 1.52
-                    ("Huang (2009)", 0.55, 0.35, 0.85),
-                    ("Su (2010)", 3.75, 0.39, 35.92),
-                    ("Overall", 0.65, 0.44, 0.98),
+                    ("Li (2005)", 152.0, 0.34, 6.75, 517.0), # should be 1.52 and 5.17
+                    ("Huang (2009)", 0.55, 0.35, 0.85, 93.10),
+                    ("Su (2010)", 3.75, 0.39, 35.92, 173), # should be 173
+                    ("Overall", 0.65, 0.44, 0.98, 100.0),
                 ]
                 self.assertEqual(len(expected_data), len(data))
                 total_count = 0

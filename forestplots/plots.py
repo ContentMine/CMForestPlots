@@ -7,7 +7,7 @@ import openpyxl
 
 from forestplots.helpers import forgiving_float, sanity_check_values
 
-TABLE_VALUE_SPLIT_RE = re.compile(r'([-~]{0,1}\d+[.,: ]\d*\s*[/\[\({][-~]{0,1}\d+[.,: ]\d*\s*[.,]\s*[-~]{0,1}\d+[.,: ]\d*[\]}\)])')
+TABLE_VALUE_SPLIT_RE = re.compile(r'([-~]{0,1}\d+[.,: ]\d*\s*[/\[\({][-~]{0,1}\d+[.,: ]\d*\s*[.,]\s*[-~]{0,1}\d+[.,: ]\d*[\]}\)]|\(Excluded\))')
 TABLE_VALUE_GROK_RE = re.compile(r'([-~]{0,1}\d+[.,: ]\d*)\s*[/\[\({]([-~]{0,1}\d+[.,: ]\d*)\s*[.,]\s*([-~]{0,1}\d+[.,: ]\d*)[\]}\)]')
 
 class InvalidForestPlot(Exception):
@@ -18,6 +18,7 @@ class Table():
 
     def __init__(self):
         self.table_data = []
+        self.title_list = []
 
     def add_data(self, data):
         """Adds more data about the table."""
@@ -51,6 +52,13 @@ class Table():
             mode_data.append(tuple(final_row))
         return mode_data
 
+    def add_title(self, title):
+        if title:
+            self.title_list.append(title)
+
+    def collapse_titles(self):
+        return max(set(self.title_list), key=self.title_list.count)
+
 class ForestPlot():
     """Represents a single forest plot image held within a ctree."""
 
@@ -77,6 +85,14 @@ class ForestPlot():
         """Get the main table. Others may exist."""
         return self.table_list[0]
 
+    def get_table(self, index):
+        try:
+            return self.table_list[index]
+        except IndexError:
+            # yes, this can blow up, yes that's deliberate
+            self.table_list.append(Table())
+            return self.table_list[index]
+
 
     @staticmethod
     def _decode_table_values_ocr(ocr_prose):
@@ -94,7 +110,8 @@ class ForestPlot():
 
                 values.append(value)
             except AttributeError:
-                pass
+                if part == "(Excluded)":
+                    values.append(("Excluded", "Excluded", "Excluded"))
         return values
 
     def is_valid(self):

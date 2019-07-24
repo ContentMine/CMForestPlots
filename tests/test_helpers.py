@@ -8,9 +8,13 @@ class ForgivingFloatTests(unittest.TestCase):
 
         valid_cases = [("1.23", 1.23),
                        ("1,23", 1.23),
+                       ("1 23", 1.23),
                        ("-1.23", -1.23),
                        ("-1,23", -1.23),
-                       ("~1,23", -1.23)]
+                       ("~1,23", -1.23),
+                       ("58.43", 58.43),
+                       ("$8.43", 58.43),
+                       ("§8.43", 58.43),]
         for case in valid_cases:
             self.assertEqual(forgiving_float(case[0]), case[1])
 
