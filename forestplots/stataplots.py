@@ -228,7 +228,10 @@ class StataForestPlot(ForestPlot):
                 output_ocr_name = os.path.join(self.image_directory, "body.{0}.txt".format(threshold))
                 ocr_prose = open(output_ocr_name, 'r').read()
 
-                result_list = self._decode_table_columnwise_ocr(ocr_prose)
+                try:
+                    result_list = self._decode_table_columnwise_ocr(ocr_prose)
+                except ValueError:
+                    continue
                 for index in range(len(result_list)):
                     results = result_list[index]
                     if results[0]:
