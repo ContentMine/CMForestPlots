@@ -26,6 +26,8 @@ HEADER_RE = re.compile(r"^.*\n\s*(M-H|[1I]V)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s
 
 TABLE_LINE_PARSE_RE = re.compile(r'^(.*?)\s+(\d+)\s+(\d+)\s+.*\s+([-~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-~]{0,1}\d+[.,:]\d*)\s*,\s*([-~]{0,1}\d+[.,:]\d*)[\]}\)]\s*$')
 
+FAVOURS_RE = re.compile(r'Favours\s*\[(.*)\]\s*Favours\s*\[(.*)\]')
+
 class SPSSForestPlot(ForestPlot):
     """Concrete subclass for processing SPSS forest plots."""
 
@@ -206,6 +208,38 @@ class SPSSForestPlot(ForestPlot):
                 flattened_data = [(title, values[0], values[1], values[2]) for title, values in data.items()]
                 self.primary_table.add_data(flattened_data)
 
+    @staticmethod
+    def _decode_footer_scale_ocr(ocr_prose):
+        lines = ocr_prose.split('\n')
+        for line in lines:
+            match = FAVOURS_RE.match(line)
+            if match:
+                return match.groups()
+        raise ValueError
+
+    def _process_scale(self):
+        header_image_path = os.path.join(self.image_directory, "raw.footer.scale.png")
+        if not os.path.isfile(header_image_path):
+            raise InvalidForestPlot
+
+        for threshold in range(50, 80, 2):
+            output_ocr_name = os.path.join(self.image_directory, f"footer.scale.{threshold}.txt")
+            if not os.path.isfile(output_ocr_name):
+                output_image_name = os.path.join(self.image_directory, f"footer.scale.{threshold}.png")
+                if not os.path.isfile(output_image_name):
+                    subprocess.run(["convert", "-black-threshold", f"{threshold}%",
+                                    header_image_path, output_image_name])
+                # we could use -c preserve_interword_spaces=1
+                subprocess.run(["tesseract", output_image_name, os.path.splitext(output_ocr_name)[0]],
+                               capture_output=True)
+
+            ocr_prose = open(output_ocr_name).read()
+            try:
+                self.group_a, self.group_b = SPSSForestPlot._decode_footer_scale_ocr(ocr_prose)
+                break
+            except ValueError:
+                continue
+
     def _write_data_to_worksheet(self, worksheet):
 
         count = 1
@@ -251,6 +285,10 @@ class SPSSForestPlot(ForestPlot):
 
         self._process_table()
         if not self.primary_table.table_data:
+            raise InvalidForestPlot
+
+        self._process_scale()
+        if not self.group_a or not self.group_b:
             raise InvalidForestPlot
 
     def json_repr(self):

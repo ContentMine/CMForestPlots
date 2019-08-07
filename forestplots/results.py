@@ -197,6 +197,8 @@ class Results:
                             except KeyError:
                                 pass
 
+                        self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_A, plot.group_a)
+                        self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_B, plot.group_b)
                     elif isinstance(plot, StataForestPlot):
                         self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_I_SQUARED,
                                         plot.overall_effect["i^2"])
