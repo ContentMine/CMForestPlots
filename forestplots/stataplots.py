@@ -10,7 +10,7 @@ from forestplots.helpers import forgiving_float, sanity_check_values
 
 StataTableResults = collections.namedtuple('StataTableResults', 'titles values weights i_squared probability title')
 
-HEADER_RE = re.compile(r".*(OR)\s*[\(\[](\d+)%.*")
+HEADER_RE = re.compile(r".*(OR|RR|SMD)\s*[\(\[](\d+)%.*")
 TABLE_LINE_PARSE_RE = re.compile(r"\s*(.*?)[\s—]*([-~]{0,1}\d+[.,:]?\d*)\s*[/\[\({]([-~]{0,1}\d+[.,:]?\d*)\s*,\s*([-~]{0,1}\d+[.,:]?\d*)[\]}\)]\s*([-~]{0,1}\d+[.,:]?\d*)")
 OVERALL_LINE_RE = re.compile(r"(Overall|Subtotal) [\({\[].*squared = (\d+[.,:]?\d*)%[.,]\s*p\s*=\s*(\d+[.,:]?\d*)[\)}\]]")
 
@@ -276,8 +276,6 @@ class StataForestPlot(ForestPlot):
                 count += 1
             count += 1
 
-
-
     def process(self):
         """Process the possible Stata forest plot."""
         self._process_header()
@@ -285,3 +283,15 @@ class StataForestPlot(ForestPlot):
             raise InvalidForestPlot
 
         self._process_body()
+
+    def json_repr(self):
+        repr = {}
+
+        for key, value in self.summary.items():
+            repr[key] = value
+
+        for key, value in self.overall_effect.items():
+            repr[key] = value
+
+        return repr
+

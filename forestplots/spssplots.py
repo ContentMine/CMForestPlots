@@ -83,11 +83,11 @@ class SPSSForestPlot(ForestPlot):
             raise InvalidForestPlot
 
         for threshold in range(50, 80, 2):
-            output_ocr_name = os.path.join(self.image_directory, "footer.summary.{0}.txt".format(threshold))
+            output_ocr_name = os.path.join(self.image_directory, f"footer.summary.{threshold}.txt")
             if not os.path.isfile(output_ocr_name):
-                output_image_name = os.path.join(self.image_directory, "footer.summary.{0}.png".format(threshold))
+                output_image_name = os.path.join(self.image_directory, f"footer.summary.{threshold}.png")
                 if not os.path.isfile(output_image_name):
-                    subprocess.run(["convert", "-black-threshold", "{0}%".format(threshold), footer_image_path,
+                    subprocess.run(["convert", "-black-threshold", f"{threshold}%", footer_image_path,
                                     output_image_name])
                 subprocess.run(["tesseract", output_image_name, os.path.splitext(output_ocr_name)[0]],
                                capture_output=True)
@@ -115,12 +115,13 @@ class SPSSForestPlot(ForestPlot):
             raise InvalidForestPlot
 
         for threshold in range(50, 80, 2):
-            output_ocr_name = os.path.join(self.image_directory, "header.graphheads.{0}.txt".format(threshold))
+            output_ocr_name = os.path.join(self.image_directory, f"header.graphheads.{threshold}.txt")
             if not os.path.isfile(output_ocr_name):
-                output_image_name = os.path.join(self.image_directory, "header.graphheads.{0}.png".format(threshold))
+                output_image_name = os.path.join(self.image_directory, f"header.graphheads.{threshold}.png")
                 if not os.path.isfile(output_image_name):
-                    subprocess.run(["convert", "-black-threshold", "{0}%".format(threshold),
+                    subprocess.run(["convert", "-black-threshold", f"{threshold}%",
                                     header_image_path, output_image_name])
+                # we could use -c preserve_interword_spaces=1
                 subprocess.run(["tesseract", output_image_name, os.path.splitext(output_ocr_name)[0]],
                                capture_output=True)
 
@@ -203,10 +204,6 @@ class SPSSForestPlot(ForestPlot):
             if values:
                 data = collections.OrderedDict(zip(titles, values))
                 flattened_data = [(title, values[0], values[1], values[2]) for title, values in data.items()]
-                try:
-                    print(flattened_data[1])
-                except IndexError:
-                    pass
                 self.primary_table.add_data(flattened_data)
 
     def _write_data_to_worksheet(self, worksheet):
@@ -242,7 +239,6 @@ class SPSSForestPlot(ForestPlot):
                 worksheet.cell(row=count, column=5, value=value[3])
                 count += 1
 
-
     def process(self):
         """Process the possible SPSS forest plot."""
         self._process_footer()
@@ -256,3 +252,16 @@ class SPSSForestPlot(ForestPlot):
         self._process_table()
         if not self.primary_table.table_data:
             raise InvalidForestPlot
+
+    def json_repr(self):
+        """Creates a JSON compatible dictionary representation."""
+
+        res = {}
+
+        for key, value in self.summary.items():
+            res[key] = value
+
+        for key, value in self.overall_effect.items():
+            res[key] = value
+
+        return res

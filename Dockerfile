@@ -3,6 +3,7 @@ FROM rtfpessoa/ubuntu-jdk8
 RUN apt-get update && apt-get install -y \
     maven \
     python3.7 \
+    python3-pip \
     tesseract-ocr \
     imagemagick
 

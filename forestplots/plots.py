@@ -10,6 +10,8 @@ from forestplots.helpers import forgiving_float, sanity_check_values
 TABLE_VALUE_SPLIT_RE = re.compile(r'([-~]{0,1}\d+[.,: ]\d*\s*[/\[\({][-~]{0,1}\d+[.,: ]\d*\s*[.,]\s*[-~]{0,1}\d+[.,: ]\d*[\]}\)]|\(Excluded\))')
 TABLE_VALUE_GROK_RE = re.compile(r'([-~]{0,1}\d+[.,: ]\d*)\s*[/\[\({]([-~]{0,1}\d+[.,: ]\d*)\s*[.,]\s*([-~]{0,1}\d+[.,: ]\d*)[\]}\)]')
 
+NAME_RE = re.compile(r'^image\.([\d\.]+)_.*$')
+
 class InvalidForestPlot(Exception):
     """Raised if during processing we realise this isn't a valid forest plot."""
 
@@ -71,6 +73,12 @@ class ForestPlot():
 
         self.table_list = [Table()]
 
+    @property
+    def id(self):
+        """Get a unique ID for the image."""
+        basename = os.path.basename(self.image_directory)
+        return NAME_RE.match(basename).groups()[0]
+
     def add_summary_information(self, estimator_type=None, model_type=None, confidence_interval=None):
         """Add summary information about the forest plot."""
         if estimator_type:
@@ -86,6 +94,7 @@ class ForestPlot():
         return self.table_list[0]
 
     def get_table(self, index):
+        """Get one of the tables in this plot."""
         try:
             return self.table_list[index]
         except IndexError:
@@ -130,3 +139,7 @@ class ForestPlot():
         self._write_data_to_worksheet(worksheet)
 
         workbook.save(os.path.join(self.image_directory, "results.xlsx"))
+
+    def json_repr(self):
+        """Creates a JSON compatible dictionary representation."""
+        raise NotImplementedError
