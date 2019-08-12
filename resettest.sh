@@ -13,12 +13,12 @@ mkdir $TESTDIR
 # done
 
 
-for d in ../forestplots/spssSimple/PMC55*; do
+for d in ../forestplots/spssSimple/PMC*; do
  p=`basename ${d}`
  cp ../forestplots/spssSimple/${p}/fulltext.pdf $TESTDIR/${p}.pdf
 done
 
-for d in ../forestplots/stataSimple/PMC599*; do
+for d in ../forestplots/stataSimple/PMC*; do
   p=`basename ${d}`
   cp ../forestplots/stataSimple/${p}/fulltext.pdf $TESTDIR/${p}.pdf
 done

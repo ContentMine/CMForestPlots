@@ -27,9 +27,9 @@ PARTS_GROK_RE = re.compile(r"([\w7\?]+.?)\s*[=<>]\s*(\d+[,.]*\d*)")
 
 HEADER_RE = re.compile(r"^.*\n\s*(M-H|[1IT]V)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
 
-TABLE_LINE_PARSE_RE = re.compile(r'^(.*?)\s+(\d+)\s+(\d+)\s+.*\s+([-~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-~]{0,1}\d+[.,:]\d*)\s*,\s*([-~]{0,1}\d+[.,:]\d*)[\]}\)]\s*$')
+TABLE_LINE_PARSE_RE = re.compile(r'^(.*?)\s+(\d+)\s+(\d+)\s+.*\s+([-—~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-—~]{0,1}\d+[.,:]\d*)\s*,\s*([-—~]{0,1}\d+[.,:]\d*)[\]}\)]\s*$')
 
-SCALE_RE = re.compile(r'([-~]{0,1}\d+[,.]*\d*)\s*([-~]{0,1}\d+[,.]*\d*)\s*([-~]{0,1}\d+[,.]*\d*)\s*([-~]{0,1}\d+[,.]*\d*)\s*([-~]{0,1}\d+[,.]*\d*)')
+SCALE_RE = re.compile(r'([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)')
 FAVOURS_RE = re.compile(r'Favours\s*[\[{](.*)\]\s*Favours\s*\[(.*)[}\]]')
 
 class SPSSForestPlot(ForestPlot):

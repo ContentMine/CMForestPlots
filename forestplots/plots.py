@@ -7,8 +7,8 @@ import openpyxl
 
 from forestplots.helpers import forgiving_float, sanity_check_values
 
-TABLE_VALUE_SPLIT_RE = re.compile(r'([-~]{0,1}\d+[.,: ]\d*\s*[/\[\({][-~]{0,1}\d+[.,: ]\d*\s*[.,]\s*[-~]{0,1}\d+[.,: ]\d*[\]}\)]|\(Excluded\))')
-TABLE_VALUE_GROK_RE = re.compile(r'([-~]{0,1}\d+[.,: ]\d*)\s*[/\[\({]([-~]{0,1}\d+[.,: ]\d*)\s*[.,]\s*([-~]{0,1}\d+[.,: ]\d*)[\]}\)]')
+TABLE_VALUE_SPLIT_RE = re.compile(r'([-—~]{0,1}\d+[.,: ]\d*\s*[/\[\({][-—~]{0,1}\d+[.,: ]\d*\s*[.,]\s*[-—~]{0,1}\d+[.,: ]\d*[\]}\)]|\(Excluded\))')
+TABLE_VALUE_GROK_RE = re.compile(r'([-—~]{0,1}\d+[.,: ]\d*)\s*[/\[\({]([-—~]{0,1}\d+[.,: ]\d*)\s*[.,]\s*([-—~]{0,1}\d+[.,: ]\d*)[\]}\)]')
 
 NAME_RE = re.compile(r'^image\.([\d\.]+)_.*$')
 
