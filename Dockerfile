@@ -1,11 +1,15 @@
 FROM rtfpessoa/ubuntu-jdk8
 
-RUN apt-get update && apt-get install -y \
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update
+RUN apt-get install tzdata
+RUN apt-get install -y \
     maven \
     python3.7 \
     python3-pip \
     tesseract-ocr \
-    imagemagick
+    imagemagick \
+    libopencv-dev
 
 ADD cephis /usr/src/cephis
 ADD normami /usr/src/normami

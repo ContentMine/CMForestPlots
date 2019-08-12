@@ -65,7 +65,7 @@ class Controller():
 
             self.normami("ami-filter", ["--small", "small", "--duplicate", "duplicate", "--monochrome", "monochrome"])
 
-            for threshold in ["150"]:
+            for threshold in ["90"]:
                 print(f"Testing with threshold {threshold}")
                 self.normami("ami-image", ["--inputname", "raw", "--sharpen", "sharpen4", "--threshold", threshold,
                                            "--despeckle", "true"])
@@ -73,10 +73,15 @@ class Controller():
                 self.normami("ami-pixel", ["--projections", "--yprojection", "0.4",
                                            "--xprojection", "0.7", "--lines", "--minheight", "1", "--rings", "-1",
                                            "--islands", "0",
-                                           "--inputname", "raw_s4_thr_{0}_ds".format(threshold),
-                                           "--templateinput", "raw_s4_thr_{0}/projections.xml".format(threshold),
-                                           "--templateoutput", "template.xml",
-                                           "--templatexsl", "/org/contentmine/ami/tools/spssTemplate1.xsl"])
+                                           "--inputname", "raw_s4_thr_{0}_ds".format(threshold)])
+#                                            "--templateinput", "raw_s4_thr_{0}/projections.xml".format(threshold),
+#                                            "--templateoutput", "template.xml",
+#                                            "--templatexsl", "/org/contentmine/ami/tools/spssTemplate1.xsl"])
+
+#                 self.normami("ami-pixel", ["--inputname", f"raw_s4_thr_{threshold}_ds",
+#                                            "--templateinput", f"raw_s4_thr_{threshold}/projections.xml",
+#                                            "--templateoutput", "template.xml",
+#                                            "--templatexsl", "/org/contentmine/ami/tools/spssTemplate1.xsl"])
                 # ami-pixel seems to ignore the --outputDirectory argument, so let us fix that
                 for ctree in project_contents:
                     pdf_images_dir = os.path.join(ctree, "pdfimages")
@@ -89,10 +94,15 @@ class Controller():
                                            "--xprojection", "0.6", "--lines", "--minheight", "1", "--rings", "-1",
                                            "--islands", "0",
                                            "--subimage", "statascale", "y", "LAST", "delta", "10", "projection", "x",
-                                           "--inputname", f"raw_s4_thr_{threshold}_ds",
-                                           "--templateinput", f"raw_s4_thr_{threshold}_ds/projections.xml",
-                                           "--templateoutput", "template.xml",
-                                           "--templatexsl", "/org/contentmine/ami/tools/stataTemplate1.xsl"])
+                                           "--inputname", f"raw_s4_thr_{threshold}_ds",])
+#                                            "--templateinput", f"raw_s4_thr_{threshold}_ds/projections.xml",
+#                                            "--templateoutput", "template.xml",
+#                                            "--templatexsl", "/org/contentmine/ami/tools/stataTemplate1.xsl"])
+
+#                 self.normami("ami-pixel", ["--inputname", f"raw_s4_thr_{threshold}_ds",
+#                                            "--templateinput", f"raw_s4_thr_{threshold}/projections.xml",
+#                                            "--templateoutput", "template.xml",
+#                                            "--templatexsl", "/org/contentmine/ami/tools/stataTemplate1.xsl"])
                 # ami-pixel seems to ignore the --outputDirectory argument, so let us fix that
                 for ctree in project_contents:
                     pdf_images_dir = os.path.join(ctree, "pdfimages")
@@ -110,18 +120,23 @@ class Controller():
                         spss_projection = Projections(os.path.join(imagedir, f"spss_{threshold}", "projections.xml"))
                         if spss_projection.likely_spss():
                             os.rename(os.path.join(imagedir, f"spss_{threshold}"),
-                                      os.path.join(imagedir, f"target_spss_{threshold}"))
+                                      os.path.join(imagedir, "target_spss"))
+#                             self.normami("ami-pixel", ["--templateinput", "target_spss/clean.xml",
+#                                                        "--templateoutput", "template.xml",
+#                                                        "--templatexsl", "/org/contentmine/ami/tools/spssTemplate1.xsl"])
 
                         stata_projection = Projections(os.path.join(imagedir, f"stata_{threshold}", "projections.xml"))
                         if stata_projection.likely_stata():
                             os.rename(os.path.join(imagedir, f"stata_{threshold}"),
-                                      os.path.join(imagedir, f"target_stata_{threshold}"))
+                                      os.path.join(imagedir, "target_stata"))
+#                             self.normami("ami-pixel", ["--templateinput", "target_stata/clean.xml",
+#                                                        "--templateoutput", "template.xml",
+#                                                        "--templatexsl", "/org/contentmine/ami/tools/stataTemplate1.xsl"])
 
-                self.normami("ami-forestplot",
-                             ["--segment", "--template", f"target_spss_{threshold}/template.xml"])
-                self.normami("ami-forestplot",
-                             ["--segment", "--template", f"target_stata_{threshold}/template.xml"])
-
+#                 self.normami("ami-forestplot",
+#                              ["--segment", "--template", "target_spss/template.xml"])
+#                 self.normami("ami-forestplot",
+#                              ["--segment", "--template", "target_stata/template.xml"])
 
         papers = []
         for ctree in project_contents:
@@ -132,25 +147,22 @@ class Controller():
             imagedirs = [os.path.join(pdf_images_dir, x) for x in os.listdir(pdf_images_dir) if x.startswith("image.")]
             for imagedir in imagedirs:
 
-                if os.path.isdir(os.path.join(imagedir, "target_spss_150")):
+                plot = None
+                if os.path.isdir(os.path.join(imagedir, "target_spss")):
                     plot = SPSSForestPlot(imagedir)
-                    try:
-                        plot.process()
-                    except InvalidForestPlot:
-                        pass
-                    else:
-                        paper.plots.append(plot)
-                        plot.save()
-
-                if os.path.isdir(os.path.join(imagedir, "target_stata_150")):
+                elif os.path.isdir(os.path.join(imagedir, "target_stata")):
                     plot = StataForestPlot(imagedir)
-                    try:
-                        plot.process()
-                    except InvalidForestPlot:
-                        pass
-                    else:
-                        paper.plots.append(plot)
-                        plot.save()
+                else:
+                    continue
+
+                try:
+                    plot.break_up_image()
+                    plot.process()
+                except InvalidForestPlot:
+                    pass
+                else:
+                    paper.plots.append(plot)
+                    plot.save()
 
 
         summary = {}

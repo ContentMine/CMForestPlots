@@ -6,8 +6,11 @@ import os
 import re
 import subprocess
 
+import cv2
+
 from forestplots.plots import ForestPlot, InvalidForestPlot
 from forestplots.helpers import forgiving_float, sanity_check_values
+from forestplots.projections import Projections
 
 TAU_LABEL = "Tau"
 CHI_LABEL = "Chi"
@@ -22,14 +25,40 @@ OVERALL_EFFECT_KEYS = [Z_LABEL, P_LABEL]
 PARTS_SPLIT_RE = re.compile(r"([\w7\?]+.?\s*[=<>]\s*\d+[,.]*\d*)")
 PARTS_GROK_RE = re.compile(r"([\w7\?]+.?)\s*[=<>]\s*(\d+[,.]*\d*)")
 
-HEADER_RE = re.compile(r"^.*\n\s*(M-H|[1I]V)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
+HEADER_RE = re.compile(r"^.*\n\s*(M-H|[1IT]V)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
 
 TABLE_LINE_PARSE_RE = re.compile(r'^(.*?)\s+(\d+)\s+(\d+)\s+.*\s+([-~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-~]{0,1}\d+[.,:]\d*)\s*,\s*([-~]{0,1}\d+[.,:]\d*)[\]}\)]\s*$')
 
-FAVOURS_RE = re.compile(r'Favours\s*\[(.*)\]\s*Favours\s*\[(.*)\]')
+SCALE_RE = re.compile(r'([-~]{0,1}\d+[,.]*\d*)\s*([-~]{0,1}\d+[,.]*\d*)\s*([-~]{0,1}\d+[,.]*\d*)\s*([-~]{0,1}\d+[,.]*\d*)\s*([-~]{0,1}\d+[,.]*\d*)')
+FAVOURS_RE = re.compile(r'Favours\s*[\[{](.*)\]\s*Favours\s*\[(.*)[}\]]')
 
 class SPSSForestPlot(ForestPlot):
     """Concrete subclass for processing SPSS forest plots."""
+
+    def break_up_image(self):
+        """Splits the forest plot image into sub-images required for OCR."""
+        projections = Projections(os.path.join(self.image_directory, f"target_spss", "projections.xml"))
+
+        # we want to split this into six areas, only four or which we currently use for OCR purposes
+        x_line = int(projections.horizontal_lines[1].x1)
+        y_top = int(projections.horizontal_lines[0].y)
+        y_bottom = int(projections.horizontal_lines[1].y)
+
+        image = cv2.imread(os.path.join(self.image_directory, "raw.png"))
+
+        y_max, x_max = image.shape[0:2]
+
+        raw_header_graphheads = image[0:y_top, x_line:x_max]
+        cv2.imwrite(os.path.join(self.image_directory, "raw.header.graphheads.png"), raw_header_graphheads)
+
+        raw_body_table = image[y_top:y_bottom, 0:x_line]
+        cv2.imwrite(os.path.join(self.image_directory, "raw.body.table.png"), raw_body_table)
+
+        raw_footer_summary = image[y_bottom:y_max, 0:x_line]
+        cv2.imwrite(os.path.join(self.image_directory, "raw.footer.summary.png"), raw_footer_summary)
+
+        raw_footer_scale = image[y_bottom:y_max, x_line:x_max]
+        cv2.imwrite(os.path.join(self.image_directory, "raw.footer.scale.png"), raw_footer_scale)
 
     @staticmethod
     def _decode_footer_summary_ocr(ocr_prose):
@@ -106,7 +135,7 @@ class SPSSForestPlot(ForestPlot):
         match = HEADER_RE.match(ocr_prose)
         try:
             groups = list(match.groups())
-            groups[0] = groups[0].replace('1', 'I')
+            groups[0] = groups[0].replace('1', 'I').replace('T', 'I')
             return tuple(groups)
         except AttributeError:
             raise ValueError
@@ -210,12 +239,27 @@ class SPSSForestPlot(ForestPlot):
 
     @staticmethod
     def _decode_footer_scale_ocr(ocr_prose):
+        groups = None
+        mid_scale = None
+
         lines = ocr_prose.split('\n')
         for line in lines:
             match = FAVOURS_RE.match(line)
             if match:
-                return match.groups()
-        raise ValueError
+                groups = match.groups()
+                continue
+            match = SCALE_RE.match(line)
+            if match:
+                try:
+                    mid_scale = forgiving_float(match.groups()[2])
+                    continue
+                except AttributeError:
+                    pass
+
+        if not groups or mid_scale is None:
+            raise ValueError
+
+        return groups, mid_scale
 
     def _process_scale(self):
         header_image_path = os.path.join(self.image_directory, "raw.footer.scale.png")
@@ -235,7 +279,9 @@ class SPSSForestPlot(ForestPlot):
 
             ocr_prose = open(output_ocr_name).read()
             try:
-                self.group_a, self.group_b = SPSSForestPlot._decode_footer_scale_ocr(ocr_prose)
+                groups, self.mid_point = SPSSForestPlot._decode_footer_scale_ocr(ocr_prose)
+                self.group_a = groups[0]
+                self.group_b = groups[1]
                 break
             except ValueError:
                 continue
@@ -281,6 +327,7 @@ class SPSSForestPlot(ForestPlot):
 
         self._process_header()
         if not self.summary:
+            print(f"ooo {self.image_directory}")
             raise InvalidForestPlot
 
         self._process_table()
@@ -288,7 +335,10 @@ class SPSSForestPlot(ForestPlot):
             raise InvalidForestPlot
 
         self._process_scale()
-        if not self.group_a or not self.group_b:
+        try:
+            if not self.group_a or not self.group_b or self.mid_point is None:
+                raise InvalidForestPlot
+        except AttributeError:
             raise InvalidForestPlot
 
     def json_repr(self):

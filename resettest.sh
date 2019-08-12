@@ -18,7 +18,7 @@ for d in ../forestplots/spssSimple/PMC55*; do
  cp ../forestplots/spssSimple/${p}/fulltext.pdf $TESTDIR/${p}.pdf
 done
 
-for d in ../forestplots/stataSimple/PMC58*; do
+for d in ../forestplots/stataSimple/PMC599*; do
   p=`basename ${d}`
   cp ../forestplots/stataSimple/${p}/fulltext.pdf $TESTDIR/${p}.pdf
 done

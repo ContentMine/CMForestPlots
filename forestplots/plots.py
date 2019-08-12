@@ -59,7 +59,10 @@ class Table():
             self.title_list.append(title)
 
     def collapse_titles(self):
-        return max(set(self.title_list), key=self.title_list.count)
+        try:
+            return max(set(self.title_list), key=self.title_list.count)
+        except ValueError:
+            return ""
 
 class ForestPlot():
     """Represents a single forest plot image held within a ctree."""
@@ -78,6 +81,10 @@ class ForestPlot():
         """Get a unique ID for the image."""
         basename = os.path.basename(self.image_directory)
         return NAME_RE.match(basename).groups()[0]
+
+    def break_up_image(self):
+        """Splits the forest plot image into sub-images required for OCR."""
+        raise NotImplementedError
 
     def add_summary_information(self, estimator_type=None, model_type=None, confidence_interval=None):
         """Add summary information about the forest plot."""

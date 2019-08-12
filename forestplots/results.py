@@ -38,7 +38,7 @@ OVERALL_HEADERS = Headers([
 SUBGROUP_HEADERS = Headers([
     Header('sub group title', ['title']),
     Header('model type', ['fixed effect', 'random effect']),
-    Header('effect size type', ['RR', 'OR', 'SMD']),
+    Header('effect size type', ['RR', 'OR', 'SMD', 'WMD']),
     Header('estimator type', ['IV', 'M-H']),
     Header('pooled effect size', ['CI', 'CI lower bound', 'CI upper bound']),
     Header('Confidence interval type', ['90%', '95%', '99%']),
@@ -146,8 +146,13 @@ class Results:
                     self.plain_cell(worksheet, row, 2 + OVERALL_HEADERS.COLUMN_HAS_SUBPLOTS, "x")
 
                 # get the final table
-                last_table = plot.get_table(-1)
-                last_row = last_table.collapse_data()[-1]
+                try:
+                    last_table = plot.get_table(-1)
+                    last_row = last_table.collapse_data()[-1]
+                except IndexError:
+                    row += 1
+                    continue
+
 
                 self.plain_cell(worksheet, row, 2 + OVERALL_HEADERS.COLUMN_EFFECT_SIZE, last_row[1])
                 self.plain_cell(worksheet, row, 2 + OVERALL_HEADERS.COLUMN_CI_LOWER_BOUND, last_row[2])
@@ -199,11 +204,24 @@ class Results:
 
                         self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_A, plot.group_a)
                         self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_B, plot.group_b)
+
+                        if plot.mid_point < last_row[1]:
+                            self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_FAVOURS_A, "x")
+                        if plot.mid_point > last_row[1]:
+                            self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_FAVOURS_B, "x")
+
+
                     elif isinstance(plot, StataForestPlot):
-                        self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_I_SQUARED,
-                                        plot.overall_effect["i^2"])
-                        self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_P_VALUE,
-                                        plot.overall_effect["p"])
+
+                        for col, key in [
+                            (SUBGROUP_HEADERS.COLUMN_I_SQUARED, "i^2"),
+                            (SUBGROUP_HEADERS.COLUMN_P_VALUE, "p"),
+                        ]:
+                            try:
+                                self.plain_cell(worksheet, row, offset + col, plot.overall_effect[key])
+                            except KeyError:
+                                pass
+
 
                     ci_type = plot.summary['Confidence interval']
                     if ci_type == "90":
@@ -222,6 +240,8 @@ class Results:
                             self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_OR, "x")
                         if estimator_type == 'SMD':
                             self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_SMD, "x")
+                        if estimator_type == 'WMD':
+                            self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_WMD, "x")
                         if estimator_type == 'IV':
                             self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_IV, "x")
                         if estimator_type == 'M-H':

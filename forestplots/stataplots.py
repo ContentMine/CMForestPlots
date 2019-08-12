@@ -5,17 +5,40 @@ import os
 import re
 import subprocess
 
+import cv2
+
 from forestplots.plots import ForestPlot, InvalidForestPlot
 from forestplots.helpers import forgiving_float, sanity_check_values
+from forestplots.projections import Projections
 
 StataTableResults = collections.namedtuple('StataTableResults', 'titles values weights i_squared probability title')
 
-HEADER_RE = re.compile(r".*(OR|RR|SMD)\s*[\(\[](\d+)%.*")
+HEADER_RE = re.compile(r".*(OR|RR|SMD|WMD)\s*[\(\[](\d+)%.*")
 TABLE_LINE_PARSE_RE = re.compile(r"\s*(.*?)[\s—]*([-~]{0,1}\d+[.,:]?\d*)\s*[/\[\({]([-~]{0,1}\d+[.,:]?\d*)\s*,\s*([-~]{0,1}\d+[.,:]?\d*)[\]}\)]\s*([-~]{0,1}\d+[.,:]?\d*)")
 OVERALL_LINE_RE = re.compile(r"(Overall|Subtotal) [\({\[].*squared = (\d+[.,:]?\d*)%[.,]\s*p\s*=\s*(\d+[.,:]?\d*)[\)}\]]")
 
 class StataForestPlot(ForestPlot):
     """Concrete subclass for processing Stata forest plots."""
+
+    def break_up_image(self):
+        """Splits the forest plot image into sub-images required for OCR."""
+        projections = Projections(os.path.join(self.image_directory, f"target_stata", "projections.xml"))
+
+        # we want to split this into three areas, only four or which we currently use for OCR purposes
+        x_line = int(projections.vertical_lines[0].x)
+        y_top = int(projections.vertical_lines[0].y1)
+        y_bottom = int(projections.horizontal_lines[0].y)
+
+        image = cv2.imread(os.path.join(self.image_directory, "raw.png"))
+
+        y_max, x_max = image.shape[0:2]
+
+        raw_header = image[0:y_top, 0:x_max]
+        cv2.imwrite(os.path.join(self.image_directory, "raw.header.png"), raw_header)
+
+        raw_body = image[y_top:y_bottom, 0:x_max]
+        cv2.imwrite(os.path.join(self.image_directory, "raw.body.png"), raw_body)
+
 
     @staticmethod
     def _decode_header_ocr(ocr_prose):

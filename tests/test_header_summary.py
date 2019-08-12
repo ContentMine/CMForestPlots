@@ -19,6 +19,11 @@ class DecodeExampleSPSSForestPlotHeaderSummary(unittest.TestCase):
         values = SPSSForestPlot._decode_header_summary_ocr(example)
         self.assertEqual(values, ("IV", "Fixed", "95"))
 
+    def test_example_4(self):
+        example = "Mean Difference\nTV. Random. 95% CI\n"
+        values = SPSSForestPlot._decode_header_summary_ocr(example)
+        self.assertEqual(values, ("IV", "Random", "95"))
+
 
 class DecodeExampleStataForestPlotHeaderSummary(unittest.TestCase):
 
