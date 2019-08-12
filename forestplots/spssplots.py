@@ -54,7 +54,8 @@ class SPSSForestPlot(ForestPlot):
         raw_body_table = image[y_top:y_bottom, 0:x_line]
         cv2.imwrite(os.path.join(self.image_directory, "raw.body.table.png"), raw_body_table)
 
-        raw_footer_summary = image[y_bottom:y_max, 0:x_line]
+        # this will clip, so we add a little margin for error
+        raw_footer_summary = image[y_bottom - 10:y_max, 0:x_line]
         cv2.imwrite(os.path.join(self.image_directory, "raw.footer.summary.png"), raw_footer_summary)
 
         raw_footer_scale = image[y_bottom:y_max, x_line:x_max]
