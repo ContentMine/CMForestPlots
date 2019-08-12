@@ -35,3 +35,12 @@ Favours [Pedicle Screw] Favours [Hybrid Instrumentation]
         groups, mid_scale = SPSSForestPlot._decode_footer_scale_ocr(example)
         self.assertEqual(groups, ("Pedicle Screw", "Hybrid Instrumentation"))
         self.assertEqual(mid_scale, 0.0)
+
+    def test_example_4(self):
+        example = """
+0.01 01 1 10 100
+Favours [WBRT plus TMZ] Favours (WBRT]
+"""
+        groups, mid_scale = SPSSForestPlot._decode_footer_scale_ocr(example)
+        self.assertEqual(groups, ("WBRT plus TMZ", "WBRT"))
+        self.assertEqual(mid_scale, 1.0)

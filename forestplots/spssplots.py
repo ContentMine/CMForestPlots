@@ -25,12 +25,12 @@ OVERALL_EFFECT_KEYS = [Z_LABEL, P_LABEL]
 PARTS_SPLIT_RE = re.compile(r"([\w7\?]+.?\s*[=<>]\s*\d+[,.]*\d*)")
 PARTS_GROK_RE = re.compile(r"([\w7\?]+.?)\s*[=<>]\s*(\d+[,.]*\d*)")
 
-HEADER_RE = re.compile(r"^.*\n\s*(M-H|[1IT]V)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
+HEADER_RE = re.compile(r"^.*\n\s*(M-?H|[1IT]V)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
 
 TABLE_LINE_PARSE_RE = re.compile(r'^(.*?)\s+(\d+)\s+(\d+)\s+.*\s+([-—~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-—~]{0,1}\d+[.,:]\d*)\s*,\s*([-—~]{0,1}\d+[.,:]\d*)[\]}\)]\s*$')
 
 SCALE_RE = re.compile(r'([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)')
-FAVOURS_RE = re.compile(r'Favours\s*[\[{](.*)\]\s*Favours\s*\[(.*)[}\]]')
+FAVOURS_RE = re.compile(r'Favours\s*[\[{\(](.*)[\]}\)]\s*Favours\s*[\[{\(](.*)[\]}\)]')
 
 class SPSSForestPlot(ForestPlot):
     """Concrete subclass for processing SPSS forest plots."""
@@ -136,7 +136,7 @@ class SPSSForestPlot(ForestPlot):
         match = HEADER_RE.match(ocr_prose)
         try:
             groups = list(match.groups())
-            groups[0] = groups[0].replace('1', 'I').replace('T', 'I')
+            groups[0] = groups[0].replace('1', 'I').replace('T', 'I').replace('MH', 'M-H')
             return tuple(groups)
         except AttributeError:
             raise ValueError
