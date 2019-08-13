@@ -30,7 +30,7 @@ HEADER_RE = re.compile(r"^.*\n\s*(M-?H|[1IT]V)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%
 TABLE_LINE_PARSE_RE = re.compile(r'^(.*?)\s+(\d+)\s+(\d+)\s+.*\s+([-—~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-—~]{0,1}\d+[.,:]\d*)\s*,\s*([-—~]{0,1}\d+[.,:]\d*)[\]}\)]\s*$')
 
 SCALE_RE = re.compile(r'([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)')
-FAVOURS_RE = re.compile(r'Favours\s*[\[{\(](.*)[\]}\)]\s*Favours\s*[\[{\(](.*)[\]}\)]')
+FAVOURS_RE = re.compile(r'rs\s*[\[{\(](.*)[\]}\)]\s*Favou?rs\s*[\[{\(](.*)[\]}\)]')
 
 class SPSSForestPlot(ForestPlot):
     """Concrete subclass for processing SPSS forest plots."""
@@ -337,7 +337,7 @@ class SPSSForestPlot(ForestPlot):
 
         self._process_scale()
         try:
-            if not self.group_a or not self.group_b or self.mid_point is None:
+            if self.mid_point is None:
                 raise InvalidForestPlot
         except AttributeError:
             raise InvalidForestPlot
