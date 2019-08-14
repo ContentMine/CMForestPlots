@@ -25,19 +25,19 @@ OVERALL_EFFECT_KEYS = [Z_LABEL, P_LABEL]
 PARTS_SPLIT_RE = re.compile(r"([\w7\?]+.?\s*[=<>]\s*\d+[,.]*\d*)")
 PARTS_GROK_RE = re.compile(r"([\w7\?]+.?)\s*[=<>]\s*(\d+[,.]*\d*)")
 
-HEADER_RE = re.compile(r"^.*\n\s*(M-?H|[1IT]V)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
+HEADER_RE = re.compile(r"^.*\n\s*(M[_-]?H|[1IT]V)[\s.,]*(Fixed|Random)[\s.,]*(\d+)%\s*C[ilI!].*", re.MULTILINE)
 
 TABLE_LINE_PARSE_RE = re.compile(r'^(.*?)\s+(\d+)\s+(\d+)\s+.*\s+([-—~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-—~]{0,1}\d+[.,:]\d*)\s*,\s*([-—~]{0,1}\d+[.,:]\d*)[\]}\)]\s*$')
 
 SCALE_RE = re.compile(r'([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)')
-FAVOURS_RE = re.compile(r'rs\s*[\[{\(](.*)[\]}\)]\s*Favou?rs\s*[\[{\(](.*)[\]}\)]')
+FAVOURS_RE = re.compile(r'.*rs\s*[\[{\(](.*)[\]}\)]\s*Favours\s*[\[{\(](.*)[\]}\)]')
 
 class SPSSForestPlot(ForestPlot):
     """Concrete subclass for processing SPSS forest plots."""
 
     def break_up_image(self):
         """Splits the forest plot image into sub-images required for OCR."""
-        projections = Projections(os.path.join(self.image_directory, f"target_spss", "projections.xml"))
+        projections = self.projections
 
         # we want to split this into six areas, only four or which we currently use for OCR purposes
         x_line = int(projections.horizontal_lines[1].x1)
@@ -136,7 +136,7 @@ class SPSSForestPlot(ForestPlot):
         match = HEADER_RE.match(ocr_prose)
         try:
             groups = list(match.groups())
-            groups[0] = groups[0].replace('1', 'I').replace('T', 'I').replace('MH', 'M-H')
+            groups[0] = groups[0].replace('1', 'I').replace('T', 'I').replace('MH', 'M-H').replace('_', '-')
             return tuple(groups)
         except AttributeError:
             raise ValueError
@@ -193,6 +193,74 @@ class SPSSForestPlot(ForestPlot):
 
         return titles, values
 
+    @staticmethod
+    def _decode_table_columnwise_ocr(ocr_prose):
+
+        return []
+
+        metadata = []
+        titles = []
+        lines = [x.strip() for x in ocr_prose.split('\n') if x.strip()]
+
+        for line in lines:
+
+            # Fix some common number replacements in OCR
+            line = line.replace('§', '5').replace('$', '5').replace('£', '[-')
+
+            overall_match = OVERALL_LINE_RE.match(line)
+            if not overall_match:
+                titles.append(line)
+            else:
+                title, i_squared_str, probability_str = overall_match.groups()
+                titles.append(title)
+                metadata.append((forgiving_float(i_squared_str), forgiving_float(probability_str)))
+
+                if title == "Overall":
+                    break
+
+        # having got the titles, now try to find the values
+        values = ForestPlot._decode_table_values_ocr(ocr_prose)
+
+        # now see if we can extract the weights from the last n lines
+        weights = [forgiving_float(x) for x in lines[-1 * len(values):]]
+
+        if len(metadata) == 1:
+            if len(titles) != len(values):
+                raise ValueError
+            return [StataTableResults(titles, values, weights, metadata[0][0], metadata[0][1], 'Overall')]
+
+        # else we assume multichart
+
+        plots = []
+
+        while titles:
+            sub_title = titles[0]
+            if len(titles) > 1:
+                titles = titles[1:]
+            index = None
+            try:
+                index = titles.index('Subtotal')
+            except ValueError:
+                try:
+                    index = titles.index('Overall')
+                except ValueError:
+                    pass
+            if index is None:
+                break
+
+            sub_titles = titles[:index + 1]
+            sub_values = values[:index + 1]
+            sub_weights = weights[:index + 1]
+
+            titles = titles[index + 1:]
+            values = values[index + 1:]
+            weights = weights[index + 1:]
+
+            plots.append(StataTableResults(sub_titles, sub_values, sub_weights, metadata[0][0], metadata[0][1], sub_title))
+            metadata = metadata[1:]
+
+        return plots
+
     def _process_table(self):
         image_path = os.path.join(self.image_directory, "raw.body.table.png")
         if not os.path.isfile(image_path):
@@ -208,35 +276,61 @@ class SPSSForestPlot(ForestPlot):
                 subprocess.run(["tesseract", output_image_name, os.path.splitext(output_ocr_name)[0]],
                                capture_output=True)
 
+        # We need to work out first if we have sub graphs or not
+        graph_counts = []
+        for threshold in range(50, 80, 2):
+            output_ocr_name = os.path.join(self.image_directory, "body.table.{0}.txt".format(threshold))
+
             ocr_prose = open(output_ocr_name, 'r').read()
-            lines = [x.strip() for x in ocr_prose.split('\n') if x.strip()]
+            graph_counts.append(ocr_prose.count('Subtotal'))
 
-            # In general tesseract will end up converting this in one of two forms:
-            # 1: it'll pull each column out one after another, and then make one single column from it all (this seems
-            #    to be the most common).
-            # 2: It'll actuall not parse the columns, and will preserve the tough layout of the table.
-            # Given that, we need to try to parse both.
+        # Take the mode as to how many subgraphs there are
+        graph_count = max(set(graph_counts), key=graph_counts.count)
 
-            hor_titles, hor_values = self._decode_table_lines_ocr(lines)
+        if graph_count in (0, 1):
 
-            ver_titles = []
-            for line in lines:
-                if line.startswith('Total'):
-                    ver_titles.append(line.replace("Cl", "CI"))
-                    break
-                ver_titles.append(line)
-            ver_values = self._decode_table_values_ocr(ocr_prose)
-            if len(ver_titles) != len(ver_values):
+            for threshold in range(50, 80, 2):
+                output_ocr_name = os.path.join(self.image_directory, "body.table.{0}.txt".format(threshold))
+                ocr_prose = open(output_ocr_name, 'r').read()
+                lines = [x.strip() for x in ocr_prose.split('\n') if x.strip()]
+
+                # In general tesseract will end up converting this in one of two forms:
+                # 1: it'll pull each column out one after another, and then make one single column from it all (this seems
+                #    to be the most common).
+                # 2: It'll actuall not parse the columns, and will preserve the tough layout of the table.
+                # Given that, we need to try to parse both.
+
+                hor_titles, hor_values = self._decode_table_lines_ocr(lines)
+
                 ver_titles = []
+                for line in lines:
+                    if line.startswith('Total'):
+                        ver_titles.append(line.replace("Cl", "CI"))
+                        break
+                    ver_titles.append(line)
+                ver_values = self._decode_table_values_ocr(ocr_prose)
+                if len(ver_titles) != len(ver_values):
+                    ver_titles = []
 
-            values, titles = hor_values, hor_titles
-            if len(ver_titles) > len(hor_titles):
-                values, titles = ver_values, ver_titles
+                values, titles = hor_values, hor_titles
+                if len(ver_titles) > len(hor_titles):
+                    values, titles = ver_values, ver_titles
 
-            if values:
-                data = collections.OrderedDict(zip(titles, values))
-                flattened_data = [(title, values[0], values[1], values[2]) for title, values in data.items()]
-                self.primary_table.add_data(flattened_data)
+                if values:
+                    data = collections.OrderedDict(zip(titles, values))
+                    flattened_data = [(title, values[0], values[1], values[2]) for title, values in data.items()]
+                    self.primary_table.add_data(flattened_data)
+
+        else:
+            for threshold in range(50, 80, 2):
+                output_ocr_name = os.path.join(self.image_directory, "body.table.{0}.txt".format(threshold))
+                ocr_prose = open(output_ocr_name, 'r').read()
+
+                try:
+                    results_list = self._decode_table_columnwise_ocr(ocr_prose)
+                except ValueError:
+                    continue
+
 
     @staticmethod
     def _decode_footer_scale_ocr(ocr_prose):

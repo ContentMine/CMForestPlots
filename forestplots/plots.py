@@ -67,12 +67,13 @@ class Table():
 class ForestPlot():
     """Represents a single forest plot image held within a ctree."""
 
-    def __init__(self, image_directory):
+    def __init__(self, image_directory, projections):
         self.image_directory = image_directory
 
         self.summary = {}
         self.hetrogeneity = {}
         self.overall_effect = {}
+        self.projections = projections
 
         self.table_list = [Table()]
 

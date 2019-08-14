@@ -22,12 +22,12 @@ class StataForestPlot(ForestPlot):
 
     def break_up_image(self):
         """Splits the forest plot image into sub-images required for OCR."""
-        projections = Projections(os.path.join(self.image_directory, f"target_stata", "projections.xml"))
+        projections = self.projections
 
         # we want to split this into three areas, only four or which we currently use for OCR purposes
         x_line = int(projections.vertical_lines[0].x)
         y_top = int(projections.vertical_lines[0].y1)
-        y_bottom = int(projections.horizontal_lines[0].y)
+        y_bottom = int(projections.horizontal_lines[-1].y)
 
         image = cv2.imread(os.path.join(self.image_directory, "raw.png"))
 
@@ -245,7 +245,7 @@ class StataForestPlot(ForestPlot):
                     self.primary_table.add_title("Data")
 
         else:
-            # treat as multiple graphs, will add later
+            # treat as multiple graphs
 
             for threshold in range(50, 80, 2):
                 output_ocr_name = os.path.join(self.image_directory, "body.{0}.txt".format(threshold))
