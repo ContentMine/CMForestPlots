@@ -14,8 +14,8 @@ from forestplots.projections import Projections
 StataTableResults = collections.namedtuple('StataTableResults', 'titles values weights i_squared probability title')
 
 HEADER_RE = re.compile(r".*(OR|RR|SMD|WMD)\s*[\(\[](\d+)%.*")
-TABLE_LINE_PARSE_RE = re.compile(r"\s*(.*?)[\s—]*([-~]{0,1}\d+[.,:]?\d*)\s*[/\[\({]([-—~]{0,1}\d+[.,:]?\d*)\s*,\s*([-—~]{0,1}\d+[.,:]?\d*)[\]}\)]\s*([-—~]{0,1}\d+[.,:]?\d*)")
-OVERALL_LINE_RE = re.compile(r"(Overall|Subtotal) [\({\[].*squared = (\d+[.,:]?\d*)%[.,]\s*p\s*=\s*(\d+[.,:]?\d*)[\)}\]]")
+TABLE_LINE_PARSE_RE = re.compile(r"\s*(.*?)[\s—]*([-~]{0,1}\d+[\.,:]?\d*)\s*[/\[\({]([-—~]{0,1}\d+[\.,:]?\d*)\s*,\s*([-—~]{0,1}\d+[\.,:]?\d*)[\]}\)]\s*([-—~]{0,1}\d+[\.,:]?\d*)")
+OVERALL_LINE_RE = re.compile(r"(Overall|Subtotal) [\({\[].*squared\s*=\s*(\d+[\.,:]?\d*|[\.,])%[.,]\s*p\s*=\s*(\d+[\.,:]?\d*|[\.,])[\)}\]]")
 
 class StataForestPlot(ForestPlot):
     """Concrete subclass for processing Stata forest plots."""
@@ -93,7 +93,10 @@ class StataForestPlot(ForestPlot):
             else:
                 title, i_squared_str, probability_str = overall_match.groups()
                 titles.append(title)
-                metadata.append((forgiving_float(i_squared_str), forgiving_float(probability_str)))
+                try:
+                    metadata.append((forgiving_float(i_squared_str), forgiving_float(probability_str)))
+                except ValueError:
+                    metadata.append((".", "."))
 
                 if title == "Overall":
                     break

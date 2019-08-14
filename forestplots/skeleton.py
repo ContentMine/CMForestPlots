@@ -116,9 +116,6 @@ class Skeleton:
     def likely_spss(self):
         """Guess if this is likely an SPSS plot."""
 
-        print(self.vertical_lines)
-        print(self.horizontal_lines)
-
         try:
             main_line = self.vertical_lines[0]
             top_line = self.horizontal_lines[0]
@@ -126,19 +123,13 @@ class Skeleton:
         except IndexError:
             return False
 
-        print(1)
-
         # is the top line over 95% of the image width? if not, bin it
         if (float(top_line.x2 - top_line.x1) / float(self.width)) < 0.9:
             return False
 
-        print(2)
-
         # is the bottom line ledd than 60% of the image width? if not, bin it
         if (float(bottom_line.x2 - bottom_line.x1) / float(self.width)) > 0.6:
             return False
-
-        print(2.5)
 
         # does the top line sit close to the start of the vertical line?
         length = float(main_line.y2 - main_line.y1)
@@ -147,16 +138,12 @@ class Skeleton:
         if (offset / length) > 0.25:
             return False
 
-        print(3)
-
         # does the bottom line sit close to the end of the vertical line?
         length = float(main_line.y2 - main_line.y1)
         offset = float(bottom_line.y - main_line.y1)
 
         if (offset / length) < 0.9:
             return False
-
-        print(4)
 
         return True
 
@@ -170,13 +157,9 @@ class Skeleton:
         except IndexError:
             return False
 
-        print('a')
-
         # is the bottom line over 95% of the image width? if not, bin it
         if (float(bottom_line.x2 - bottom_line.x1) / float(self.width)) < 0.9:
             return False
-
-        print('b')
 
         horizontal_line_y = bottom_line.y
         length = float(main_line.y2 - main_line.y1)
@@ -185,8 +168,6 @@ class Skeleton:
         if (offset / length) < 0.9:
             return False
 
-        print('c')
-
         # is the vertical line roughly central?
         vertical_line_x = main_line.x
         length = float(bottom_line.x2 - bottom_line.x1)
@@ -194,7 +175,5 @@ class Skeleton:
 
         if not 0.25 < (offset / length) < 0.75:
             return False
-
-        print('d')
 
         return True
