@@ -352,9 +352,6 @@ class SPSSForestPlot(ForestPlot):
                 except AttributeError:
                     pass
 
-        if not groups or mid_scale is None:
-            raise ValueError
-
         return groups, mid_scale
 
     def _process_scale(self):
@@ -375,10 +372,18 @@ class SPSSForestPlot(ForestPlot):
 
             ocr_prose = open(output_ocr_name).read()
             try:
-                groups, self.mid_point = SPSSForestPlot._decode_footer_scale_ocr(ocr_prose)
-                self.group_a = groups[0]
-                self.group_b = groups[1]
-                break
+                groups, mid_point = SPSSForestPlot._decode_footer_scale_ocr(ocr_prose)
+                if mid_point is not None:
+                    self.mid_point = mid_point
+                if groups:
+                    self.group_a = groups[0]
+                    self.group_b = groups[1]
+
+                try:
+                    if self.mid_point and self.group_a and self.group_b:
+                        break
+                except AttributeError:
+                    pass
             except ValueError:
                 continue
 
@@ -431,11 +436,6 @@ class SPSSForestPlot(ForestPlot):
             raise InvalidForestPlot
 
         self._process_scale()
-        try:
-            if self.mid_point is None:
-                raise InvalidForestPlot
-        except AttributeError:
-            raise InvalidForestPlot
 
     def json_repr(self):
         """Creates a JSON compatible dictionary representation."""
