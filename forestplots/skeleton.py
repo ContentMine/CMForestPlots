@@ -46,7 +46,7 @@ class Skeleton:
         theta = np.pi / 180  # angular resolution in radians of the Hough grid
         threshold = 15  # minimum number of votes (intersections in Hough grid cell)
         min_line_length = 150  # minimum number of pixels making up a line
-        max_line_gap = 20  # maximum gap in pixels between connectable line segments
+        max_line_gap = 30  # maximum gap in pixels between connectable line segments
         line_image = np.copy(img) * 0  # creating a blank to draw lines on
 
         # Run Hough on edge detected image
@@ -106,22 +106,28 @@ class Skeleton:
                 clean.append(line)
         horizontal_lines = clean
 
-        # now sort lines by length, keep longest two, put back in y order
-        horizontal_lines.sort(key=lambda a: a[0][2] - a[0][0], reverse=True)
-        horizontal_lines = horizontal_lines[:2]
-        horizontal_lines.sort(key=lambda a: a[0][1])
+        # now filter the horizontal lines, keeping the ones at the clostest to top and bottom
+        try:
+            top_line = horizontal_lines[0]
+            bottom_line = horizontal_lines[-1]
+            self.horizontal_lines = [HorizontalLine(x[0][1], x[0][0], x[0][2]) for x in [top_line, bottom_line]]
+        except IndexError:
+            self.horizontal_lines = []
 
-        self.horizontal_lines = [HorizontalLine(x[0][1], x[0][0], x[0][2]) for x in horizontal_lines]
+#
+#         horizontal_lines.sort(key=lambda a: a[0][2] - a[0][0], reverse=True)
+#         horizontal_lines = horizontal_lines[:2]
+#         horizontal_lines.sort(key=lambda a: a[0][1])
+
 
         # Find the longest vertical line_image - ideally just one
-        for x1,y1,x2,y2 in main_line:
-            _ = cv2.line(line_image,(x1,y1),(x2,y2),
+        for vline in self.vertical_lines:
+            _ = cv2.line(line_image,(vline.x, vline.y1),(vline.x, vline.y2),
                 (128 + int(random.random() * 128), 128, 128),1)
 
-        for line in horizontal_lines[:2]:
-            for x1,y1,x2,y2 in line:
-                _ = cv2.line(line_image,(x1,y1),(x2,y2),
-                    (128, 128 + int(random.random() * 128), 128),1)
+        for hline in self.horizontal_lines:
+            _ = cv2.line(line_image,(hline.x1, hline.y), (hline.x2, hline.y),
+                (128, 128 + int(random.random() * 128), 128),1)
         #
         #
         # lines_edges = cv2.addWeighted(img, 0.8, line_image, 1, 0)
