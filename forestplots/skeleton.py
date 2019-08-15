@@ -58,23 +58,39 @@ class Skeleton:
             vertical_lines = [x for x in lines if x[0][0] == x[0][2]]
         except TypeError:
             return
+
+        # debounce vertical_lines lines
+        vertical_lines.sort(key=lambda a: a[0][0])
+        clean = vertical_lines[:1]
+        for i in range(len(vertical_lines) - 1):
+            line = vertical_lines[i + 1]
+            last = clean[-1]
+            if abs(last[0][0] - line[0][0]) < 20:
+                # two very close line, just keep the longest
+                last_len = last[0][1] - last[0][3]
+                line_len = line[0][1] - line[0][3]
+                if line_len > last_len:
+                    clean = clean[:-1]
+                    clean.append(line)
+            else:
+                clean.append(line)
+        vertical_lines = clean
+
+        # sort by size, biggest to smallest
         vertical_lines.sort(key=lambda a: a[0][1] - a[0][3], reverse=True)
 
         try:
             main_line = vertical_lines[0]
         except IndexError:
             return
-
-        self.vertical_lines = [VerticalLine(main_line[0][0], main_line[0][3], main_line[0][1])]
+        self.vertical_lines = [VerticalLine(a[0][0], a[0][3], a[0][1]) for a in vertical_lines[:2]]
 
         # filter: y1 == y2 and x1 < main_line.x1 and y2 > main_line.y1  - and y1 > main_line.y1 and y1 < main_line.y2
         horizontal_lines = [a for a in lines if a[0][1] == a[0][3] and (a[0][0] < main_line[0][0] < a[0][2]) and (main_line[0][3] <= a[0][3] <= main_line[0][1])]
 
 
-        # first sort lines by y order
+        # debounce horizontal_lines
         horizontal_lines.sort(key=lambda a: a[0][1])
-
-        # debounce horizontal lines
         clean = horizontal_lines[:1]
         for i in range(len(horizontal_lines) - 1):
             line = horizontal_lines[i + 1]

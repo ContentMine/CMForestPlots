@@ -50,7 +50,6 @@ if 0:
                     (128 + int(random.random() * 128), 128 + int(random.random() * 128), 128 + int(random.random() * 128)),1)
 else:
     vertical_lines = [x for x in lines if x[0][0] == x[0][2]]
-    vertical_lines.sort(key=lambda a: a[0][1] - a[0][3], reverse=True)
 
     main_line = vertical_lines[0]
 
@@ -77,16 +76,36 @@ else:
             clean.append(line)
     horizontal_lines = clean
 
+    # debounce vertical_lines
+    vertical_lines.sort(key=lambda a: a[0][0])
+
+    clean = vertical_lines[:1]
+    for i in range(len(vertical_lines) - 1):
+        line = vertical_lines[i + 1]
+        last = clean[-1]
+        if abs(last[0][0] - line[0][0]) < 20:
+            # two very close line, just keep the longest
+            last_len = last[0][1] - last[0][3]
+            line_len = line[0][1] - line[0][3]
+            if line_len > last_len:
+                clean = clean[:-1]
+                clean.append(line)
+        else:
+            clean.append(line)
+    vertical_lines = clean
+
     # now sort lines by length
     horizontal_lines.sort(key=lambda a: a[0][2] - a[0][0], reverse=True)
+    vertical_lines.sort(key=lambda a: a[0][1] - a[0][3], reverse=True)
 
 
 
 
     # Find the longest vertical line_image - ideally just one
-    for x1,y1,x2,y2 in main_line:
-        _ = cv2.line(line_image,(x1,y1),(x2,y2),
-            (128 + int(random.random() * 128), 128, 128),1)
+    for line in vertical_lines:
+        for x1,y1,x2,y2 in line:
+            _ = cv2.line(line_image,(x1,y1),(x2,y2),
+                (128 + int(random.random() * 128), 128, 128),1)
 
     for line in horizontal_lines:
         for x1,y1,x2,y2 in line:

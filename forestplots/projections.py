@@ -35,8 +35,6 @@ class Projections:
                                                            float(line.attrib['y1']),
                                                             float(line.attrib['y2'])))
 
-
-
         # see if we have lines that need joining due to tiny gaps
         groups = {}
         for line in raw_horizontal_lines:

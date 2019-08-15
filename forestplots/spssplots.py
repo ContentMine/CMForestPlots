@@ -29,7 +29,7 @@ HEADER_RE = re.compile(r"^.*\n\s*(M[_-]?H|[1IT]V)[\s.,]*(Fixed|Random)[\s.,]*(\d
 
 TABLE_LINE_PARSE_RE = re.compile(r'^(.*?)\s+(\d+)\s+(\d+)\s+.*\s+([-—~]{0,1}\d+[.,:]\d*)\s*[/\[\({]([-—~]{0,1}\d+[.,:]\d*)\s*,\s*([-—~]{0,1}\d+[.,:]\d*)[\]}\)]\s*$')
 
-SCALE_RE = re.compile(r'([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)\s*([-—~]{0,1}\d+[,.]*\d*)')
+SCALE_RE = re.compile(r'([-—~]{0,1}\d+[,.]*\d*)\s+([-—~]{0,1}\d+[,.]*\d*)\s+([-—~]{0,1}\d+[,.]*\d*)\s+([-—~]{0,1}\d+[,.]*\d*)\s+([-—~]{0,1}\d+[,.]*\d*)')
 FAVOURS_RE = re.compile(r'.*rs\s*[\[{\(](.*)[\]}\)]\s*Favours\s*[\[{\(](.*)[\]}\)]')
 
 class SPSSForestPlot(ForestPlot):
@@ -337,6 +337,7 @@ class SPSSForestPlot(ForestPlot):
         groups = None
         mid_scale = None
 
+        ocr_prose = ocr_prose.replace('§', '5').replace('$', '5').replace('£', '[-')
         lines = ocr_prose.split('\n')
         for line in lines:
             match = FAVOURS_RE.match(line)

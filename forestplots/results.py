@@ -176,7 +176,7 @@ class Results:
                     except ValueError:
                         pass
 
-                    last_row = last_table.collapse_data()[-1]
+                    last_row = table.collapse_data()[-1]
                     self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_CI, last_row[1])
                     self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_CI_LOWER_BOUND, last_row[2])
                     self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_CI_UPPER_BOUND, last_row[3])
@@ -205,11 +205,6 @@ class Results:
                         self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_A, plot.group_a)
                         self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_B, plot.group_b)
 
-                        if plot.mid_point < last_row[1]:
-                            self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_FAVOURS_A, "x")
-                        if plot.mid_point > last_row[1]:
-                            self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_FAVOURS_B, "x")
-
 
                     elif isinstance(plot, StataForestPlot):
 
@@ -218,10 +213,17 @@ class Results:
                             (SUBGROUP_HEADERS.COLUMN_P_VALUE, "p"),
                         ]:
                             try:
-                                self.plain_cell(worksheet, row, offset + col, plot.overall_effect[key])
+                                self.plain_cell(worksheet, row, offset + col, table.metadata[key])
                             except KeyError:
                                 pass
 
+                    try:
+                        if plot.mid_point < last_row[1]:
+                            self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_FAVOURS_A, "x")
+                        if plot.mid_point > last_row[1]:
+                            self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_FAVOURS_B, "x")
+                    except AttributeError:
+                        pass
 
                     ci_type = plot.summary['Confidence interval']
                     if ci_type == "90":

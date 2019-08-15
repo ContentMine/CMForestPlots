@@ -21,6 +21,7 @@ class Table():
     def __init__(self):
         self.table_data = []
         self.title_list = []
+        self.metadata = {}
 
     def add_data(self, data):
         """Adds more data about the table."""
@@ -126,7 +127,7 @@ class ForestPlot():
                 value = sanity_check_values(value)
 
                 values.append(value)
-            except AttributeError:
+            except (AttributeError, ValueError):
                 if part == "(Excluded)":
                     values.append(("Excluded", "Excluded", "Excluded"))
         return values
