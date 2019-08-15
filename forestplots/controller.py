@@ -15,6 +15,11 @@ from forestplots.skeleton import Skeleton
 from forestplots.results import Results
 
 USE_DOCKER = True
+try:
+    USE_DOCKER = os.environ["FORESTPLOT_USE_DOCKER"] == "yes"
+except KeyError:
+    pass
+
 IMAGE_NAME = "forestplot"
 
 

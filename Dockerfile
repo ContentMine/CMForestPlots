@@ -27,3 +27,4 @@ WORKDIR /usr/src
 RUN python3.7 -m pip install -r requirements.txt
 
 ENV PATH="/usr/src/normami/target/appassembler/bin:/usr/src:${PATH}"
+ENV FORESTPLOT_USE_DOCKER="no"
