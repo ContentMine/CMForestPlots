@@ -422,6 +422,7 @@ class SPSSForestPlot(ForestPlot):
 
     def process(self):
         """Process the possible SPSS forest plot."""
+
         self._process_footer()
         if not self.hetrogeneity or not self.overall_effect:
             raise InvalidForestPlot

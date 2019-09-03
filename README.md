@@ -6,7 +6,7 @@ This is a set of scripts to let you run the forest plot extraction tools from Co
 Requirements
 ------------
 
-To run the tool you must have docker installed. For development you can run the tools locally, but in production it is expected that you will run everything in a docker container to save juggling the java and python dependancies.
+To run the tool you must have docker installed. For development you can run the tools locally, but in production it is expected that you will run everything in a docker container to save juggling the java and python dependancies. On Windows ensure that docker has permissions to access the local drive.
 
 
 Build instructions
@@ -33,9 +33,13 @@ If you have been provided with the saved docker image, you can load that into do
 
 Then, assuming you have a folder of PDF papers from which you'd like to extract forest plots you run:
 
-    docker run -it --rm -v [PATH TO PDF FILES]:/tmp/project forestplot python3.7 forestplots.py /tmp/project
+    docker run -it --rm -v [PATH TO PDF FOLDER]:/tmp/project forestplot python3.7 forestplots.py /tmp/project
 
 This will then process the PDF files, and generate a `results.xml` file in the root folder containing a summary of all the located forest plots.
+
+If on Windows, once the image is installed, you can just do:
+
+    forestplot.bat [PATH TO PDF FOLDER]
 
 
 Development instructions

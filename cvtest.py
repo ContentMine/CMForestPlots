@@ -41,11 +41,11 @@ lines = cv2.HoughLinesP(edges, rho, theta, threshold, np.array([]),
                     min_line_length, max_line_gap)
 
 
-if 0:
+if 1:
     for line in lines:
         for x1,y1,x2,y2 in line:
-#             if True:
-            if x1 == x2 or y1 == y2:
+            if True:
+#             if x1 == x2 or y1 == y2:
                 _ = cv2.line(line_image,(x1,y1),(x2,y2),
                     (128 + int(random.random() * 128), 128 + int(random.random() * 128), 128 + int(random.random() * 128)),1)
 else:
@@ -100,10 +100,10 @@ else:
 
 
 
-
-    # Find the longest vertical line_image - ideally just one
     for line in vertical_lines:
         for x1,y1,x2,y2 in line:
+            print(y1 - y2, y1, y2)
+
             _ = cv2.line(line_image,(x1,y1),(x2,y2),
                 (128 + int(random.random() * 128), 128, 128),1)
 
