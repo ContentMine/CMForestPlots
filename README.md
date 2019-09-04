@@ -22,13 +22,13 @@ If on Windows, once the image is installed, assuming you have a folder of PDF pa
 
     forestplot.bat [PATH TO PDF FOLDER]
 
+Or on macOS or other UNIX based platforms:
+
+    forestplot.sh [PATH TO PDF FOLDER]
+
 Note that the folder path should be absolute.
 
 This will then process the PDF files, and generate a `results.xml` file in the root folder containing a summary of all the located forest plots.
-
-Alternatively, you can invoke the docker image directly like so:
-
-    docker run -it --rm -v [PATH TO PDF FOLDER]:/tmp/project forestplot python3.7 forestplots.py /tmp/project
 
 
 Build instructions
