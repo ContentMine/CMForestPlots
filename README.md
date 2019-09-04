@@ -45,6 +45,7 @@ This will then build the docker container containing the ContentMine tools and t
 
 This can then be distributed as required.
 
+
 Development instructions
 -----------------------
 
@@ -67,3 +68,8 @@ You can run the tests with:
 You can run pylint using:
 
     make lint
+
+You can invoke the docker image directly without using the shell script or batch file like so:
+
+    docker run -it --rm -v [PATH TO PDF FOLDER]:/tmp/project forestplot python3.7 forestplots.py /tmp/project
+
