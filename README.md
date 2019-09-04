@@ -6,7 +6,29 @@ This is a set of scripts to let you run the forest plot extraction tools from Co
 Requirements
 ------------
 
-To run the tool you must have docker installed. For development you can run the tools locally, but in production it is expected that you will run everything in a docker container to save juggling the java and python dependancies. On Windows ensure that docker has permissions to access the local drive.
+To run the tool you must have [Docker Desktop](https://www.docker.com/products/docker-desktop) installed. For development you can run the tools locally, but in production it is expected that you will run everything in a Docker container to save juggling the java and python dependancies.
+
+On Windows you must ensure that Docker has permissions to access the local drive. To do this go to Settings, and find the Shared Drives section. Ensure that the drive you have you PDF files on is properly shared. Look up the Shared Drives section on the [Get started with Docker for Windows](https://docs.docker.com/docker-for-windows/) documentation if necessary.
+
+
+Running instructions
+---------------------
+
+If you have been provided with the saved docker image, you can load that into docker using the following command:
+
+    docker load -i forestplot.tar
+
+If on Windows, once the image is installed, assuming you have a folder of PDF papers from which you'd like to extract forest plots you run:
+
+    forestplot.bat [PATH TO PDF FOLDER]
+
+Note that the folder path should be absolute.
+
+This will then process the PDF files, and generate a `results.xml` file in the root folder containing a summary of all the located forest plots.
+
+Alternatively, you can invoke the docker image directly like so:
+
+    docker run -it --rm -v [PATH TO PDF FOLDER]:/tmp/project forestplot python3.7 forestplots.py /tmp/project
 
 
 Build instructions
@@ -22,25 +44,6 @@ This will then build the docker container containing the ContentMine tools and t
     docker save -o foresplot.tar forestplot
 
 This can then be distributed as required.
-
-
-Running instructions
----------------------
-
-If you have been provided with the saved docker image, you can load that into docker using the following command:
-
-    docker load -i forestplot.tar
-
-Then, assuming you have a folder of PDF papers from which you'd like to extract forest plots you run:
-
-    docker run -it --rm -v [PATH TO PDF FOLDER]:/tmp/project forestplot python3.7 forestplots.py /tmp/project
-
-This will then process the PDF files, and generate a `results.xml` file in the root folder containing a summary of all the located forest plots.
-
-If on Windows, once the image is installed, you can just do:
-
-    forestplot.bat [PATH TO PDF FOLDER]
-
 
 Development instructions
 -----------------------
