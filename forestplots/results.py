@@ -38,7 +38,7 @@ OVERALL_HEADERS = Headers([
 SUBGROUP_HEADERS = Headers([
     Header('sub group title', ['title']),
     Header('model type', ['fixed effect', 'random effect']),
-    Header('effect size type', ['RR', 'OR', 'SMD', 'WMD']),
+    Header('effect size type', ['RR', 'OR', 'SMD', 'WMD', 'ES']),
     Header('estimator type', ['IV', 'M-H']),
     Header('pooled effect size', ['CI', 'CI lower bound', 'CI upper bound']),
     Header('Confidence interval type', ['90%', '95%', '99%']),

@@ -183,11 +183,12 @@ class Skeleton:
         if (float(bottom_line.x2 - bottom_line.x1) / float(self.width)) < 0.9:
             return False
 
+        # check the position of the lower line is near the bottom of the horizontal line
         horizontal_line_y = bottom_line.y
         length = float(main_line.y2 - main_line.y1)
         offset = float(horizontal_line_y - main_line.y1)
 
-        if (offset / length) < 0.9:
+        if (offset / length) < 0.85:
             return False
 
         # is the vertical line roughly central?

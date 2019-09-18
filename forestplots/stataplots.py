@@ -11,7 +11,7 @@ from forestplots.plots import ForestPlot, InvalidForestPlot, TABLE_VALUE_GROK_RE
 from forestplots.helpers import forgiving_float, sanity_check_values
 from forestplots.projections import Projections
 
-HEADER_RE = re.compile(r".*(OR|RR|SMD|WMD)\s*[\(\[](\d+)%.*")
+HEADER_RE = re.compile(r".*(OR|RR|SMD|WMD|ES)\s*[\(\[](\d+)%.*")
 TABLE_LINE_PARSE_RE = re.compile(r"\s*(.*?)[\s—]*([-~]{0,1}\d+[\.,:]?\d*)\s*[/\[\({]([-—~]{0,1}\d+[\.,:]?\d*)\s*,\s*([-—~]{0,1}\d+[\.,:]?\d*)[\]}\)]\s*([-—~]{0,1}\d+[\.,:]?\d*)")
 OVERALL_LINE_RE = re.compile(r"(Overall|Subtotal) [\({\[].*squared\s*=\s*(\d+[\.,:]?\d*|[\.,])%[.,]\s*p\s*=\s*(\d+[\.,:]?\d*|[\.,])[\)}\]]")
 
