@@ -147,7 +147,7 @@ class ForestPlot():
 
         self._write_data_to_worksheet(worksheet)
 
-        workbook.save(os.path.join(self.image_directory, "results.xlsx"))
+        workbook.save(os.path.join(self.image_directory, "plot-results.xlsx"))
 
     def json_repr(self):
         """Creates a JSON compatible dictionary representation."""

@@ -75,8 +75,6 @@ class Controller():
             pdf_images_dir = os.path.join(ctree, "pdfimages")
             imagedirs = [os.path.join(pdf_images_dir, x) for x in os.listdir(pdf_images_dir) if x.startswith("image.")]
             for imagedir in imagedirs:
-#                 if not "image.6.2.96_553.248_670" in imagedir:
-#                     continue
                 skeleton = Skeleton(imagedir)
                 plot = None
                 if skeleton.likely_spss():

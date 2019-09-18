@@ -14,6 +14,11 @@ class Paper():
         """Return the PMCID for the paper."""
         return os.path.basename(self.ctree_directory).replace('pmc', '')
 
+    @property
+    def name(self):
+        return os.path.basename(self.ctree_directory)
+
+
     def json_repr(self):
         """Return a JSON compatible dictionary."""
 

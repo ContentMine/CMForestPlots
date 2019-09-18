@@ -130,7 +130,10 @@ class Results:
         for paper in self.papers_list:
 
             self.bordered_cell(worksheet, row, 2 + OVERALL_HEADERS.COLUMN_SW_TYPE, "")
-            self.bordered_cell(worksheet, row, 2 + OVERALL_HEADERS.COLUMN_FOREST_PLOT, int(paper.pmcid))
+            try:
+                self.bordered_cell(worksheet, row, 2 + OVERALL_HEADERS.COLUMN_FOREST_PLOT, int(paper.pmcid))
+            except ValueError:
+                self.bordered_cell(worksheet, row, 2 + OVERALL_HEADERS.COLUMN_FOREST_PLOT, paper.name)
             self.bordered_cell(worksheet, row, 2 + OVERALL_HEADERS.COLUMN_PDF_IMAGE, "")
             row += 1
 
@@ -201,10 +204,11 @@ class Results:
                                 self.plain_cell(worksheet, row, offset + col, plot.overall_effect[key])
                             except KeyError:
                                 pass
-
-                        self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_A, plot.group_a)
-                        self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_B, plot.group_b)
-
+                        try:
+                            self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_A, plot.group_a)
+                            self.plain_cell(worksheet, row, offset + SUBGROUP_HEADERS.COLUMN_B, plot.group_b)
+                        except AttributeError:
+                            pass
 
                     elif isinstance(plot, StataForestPlot):
 
