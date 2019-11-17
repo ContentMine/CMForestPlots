@@ -73,7 +73,11 @@ class Controller():
             papers.append(paper)
 
             pdf_images_dir = os.path.join(ctree, "pdfimages")
-            imagedirs = [os.path.join(pdf_images_dir, x) for x in os.listdir(pdf_images_dir) if x.startswith("image.")]
+            try:
+                imagedirs = [os.path.join(pdf_images_dir, x) for x in os.listdir(pdf_images_dir) if x.startswith("image.")]
+            except FileNotFoundError:
+                # Most likely we've hit other dirs in the corpus, like .git
+                continue
             for imagedir in imagedirs:
                 skeleton = Skeleton(imagedir)
                 plot = None
